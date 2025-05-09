@@ -1,0 +1,950 @@
+@extends('layouts.packing')
+@section('title', __( 'restaurant.orders' ))
+@section('content')
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="container">
+                <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active packing" id="pills-packed-tab" data-toggle="pill" href="#packed"
+                                role="tab"
+                                aria-controls="packed" aria-selected="true">Picked Item's
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link picked" id="pills-picked-tab" data-toggle="pill" href="#picked"
+                                role="tab"
+                                aria-controls="picked" aria-selected="false">Packed ({{$packedProductsCount}})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link invoiced" id="pills-invoiced-tab" data-toggle="pill" href="#invoiced"
+                                role="tab"
+                                aria-controls="invoiced" aria-selected="false">Invoiced ({{$invoiceProductCount}})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link not-there" id="pills-not-there-tab" data-toggle="pill" href="#not-there"
+                                role="tab"
+                                aria-controls="not-there" aria-selected="false">Not There
+                            ({{$outOfStockProductsCount}})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link edited" id="pills-edited-tab" data-toggle="pill" href="#edited"
+                                role="tab"
+                                aria-controls="edited" aria-selected="false">Edited ({{$editedProductsCount}})
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link location_incorrect" id="pills-location-incorrect-tab" data-toggle="pill"
+                                href="#location-incorrect"
+                                role="tab"
+                                aria-controls="location-incorrect" aria-selected="false">Location Incorrect
+                            ({{$incorrectLocationProductsCount}})
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="tab-content" id="pills-tabContent">
+                <div class="tab-pane fade show active" id="packed" role="tabpanel"
+                     aria-labelledby="pills-packed-tab">
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <p>Customer Name
+                                            : @if($orderProduct !=null){{$orderProduct->customer_name}}@endif</p>
+                                    </div>
+                                    <div class="col-md-2 text-center">
+                                        <p>Order No : @if($orderProduct !=null)#{{$orderProduct->invoice_no}}@endif</p>
+                                    </div>
+                                    <div class="col-md-2 text-center text-danger p-0 m-0">
+                                        <p>
+                                            <b>Order Time : <span id="minutes">00</span>:<span
+                                                        id="seconds">00</span></b>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <p>Picked By : @if($orderProduct !=null)
+                                        {{$orderProduct->pb_first_name}} {{$orderProduct->pb_last_name}}@endif</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="row text-center">
+                                            <div class="col-md-12">
+                                                <p><b>Order Note :</b>@if($orderProduct !=null){{$orderProduct->additional_notes}} @endif</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <p><strong>Last Scanned Item</strong> </p>
+                                    <table class="table table-bordered table-responsive text-center"
+                                           id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th>Item Image</th>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Barcode</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>Pack</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody style="overflow: auto;">
+                                        @if($packedProductDetails)
+                                                <tr>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$packedProductDetails->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        <p>{{$packedProductDetails->product_name}}</p>
+                                                    </td>
+                                                    <td>
+                                                        {{$packedProductDetails->sku}}
+                                                    </td>
+                                                    <td>
+                                                        @php 
+                                                            $pickQty = 0;
+                                                            if($packedProductDetails->updated_piking_qty != null)
+                                                            {    
+                                                               $pickQty = $packedProductDetails->updated_piking_qty;
+                                                            }else{
+                                                                if($packedProductDetails !=null && $packedProductDetails->edit_quantity != 0.00)
+                                                                {
+                                                                    $pickQty =  $packedProductDetails->edit_quantity;
+                                                                }else{
+                                                                    $pickQty = $packedProductDetails->quantity;
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        {{  round($pickQty) }}
+                                                    </td>
+                                                    <td>
+                                                        {{$packedProductDetails->packing_qty}}
+                                                    </td>
+                                                    <td>
+                                                        @if($pickQty > 1 && $pickQty != $packedProductDetails->packing_qty)
+                                                            <button onclick="packProduct('{{$packedProductDetails->id}}', true)" type="button" class="btn btn-sm btn-primary"> Pack </button>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-md-8 pl-5">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <button type="button" class="btn btn-light">
+                                        <i class="fa fa-barcode"></i>
+                                    </button>
+                                </div>
+                                <input class="form-control mousetrap ui-autocomplete-input" id="search_product"
+                                       placeholder="Enter Product name / SKU / Scan bar code" autofocus=""
+                                       name="search_product" type="text" autocomplete="off">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-light">
+                                        <i class="fa fa-plus-circle text-primary"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="color: darkblue;" class="col-md-4">
+                            <h4>Shipping Type : Delivery</h4>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-responsive text-center"
+                                           id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>On Hand</th>
+                                            <th>Edit</th>
+                                            <th>Pack</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody style="overflow: auto;">
+                                        @if(!$orderdetails->isEmpty())
+                                            @foreach($orderdetails as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                        [{{$item->item_code}}]
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->sku}}
+                                                    </td>
+                                                     <td id="updateQty_{{$item->id}}">
+                                                            {{ round($item->edit_quantity) != 0.00 ? round($item->edit_quantity) :  round($item->quantity)}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{ round($item->edit_quantity) != 0.00 ? round($item->edit_quantity) :  round($item->quantity)}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->packing_qty}}
+                                                    </td>
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <!-- <td>
+                                                        <button type="button" class="btn btn-sm btn-warning">
+                                                            Remain
+                                                        </button>
+                                                    </td> -->
+                                                    <td>
+                                                        <button onclick="editQty({{$item->id}},  {{$item->packing_qty}})" type="button"
+                                                                class="btn btn-sm btn-primary" id="pack_btn_{{$item->id}}">
+                                                            Edit
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        <button onclick="packProduct('{{$item->id}}', true)" type="button"
+                                                                class="btn btn-sm btn-primary">
+                                                            Pack
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="picked" role="tabpanel" aria-labelledby="pills-picked-tab">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h5>Packed Product List</h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered text-center" id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th> 
+                                            <th>On Hand</th>
+                                            <th>Pack Started</th>
+                                            <th>Pack Completed</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                            
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if(!$packedProducts->isEmpty())
+                                            @foreach($packedProducts as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->sku}}
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{$item->quantity}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td> 
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->packing_started_time)
+                                                            {{ @format_date($item->packing_started_time) }} {{ @format_time($item->packing_started_time) }}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($item->packing_completed_time)    
+                                                            {{ @format_date($item->packing_completed_time) }} {{ @format_time($item->packing_completed_time) }}</td>
+                                                        @endif
+                                                    <td>
+                                                        <button type="button"
+                                                                class="btn btn-sm @if($item->is_packed == 0) btn-success @else btn-warning @endif">
+                                                            @if($item->is_packed == 0)
+                                                                Packed
+                                                            @else
+                                                                Remain
+                                                            @endif
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        <button onclick="undoPacking({{$item->id}})" class="btn btn-sm btn-primary"><i class="fa fa-undo"></i> Undo</button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="invoiced" role="tabpanel" aria-labelledby="pills-invoiced-tab">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h5>Invoice Product List</h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered text-center" id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>On Hand</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if(!$invoiced_products->isEmpty())
+                                            @foreach($invoiced_products as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->item_code}}
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{$item->quantity}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button"
+                                                                class="btn btn-sm @if($item->is_packed == 1) btn-success @elseif($item->out_of_stock == 1) btn-danger @else btn-warning @endif">
+                                                            @if($item->is_packed == 0 && $item->out_of_stock == 0)
+                                                                Remain
+                                                            @elseif($item->out_of_stock == 1)
+                                                                Out of stock
+                                                            @else
+                                                                Packed
+                                                            @endif
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="not-there" role="tabpanel" aria-labelledby="pills-not-there-tab">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h5>Not There Product List</h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered text-center" id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>On Hand</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                            
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if(!$outOfStockProducts->isEmpty())
+                                            @foreach($outOfStockProducts as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->item_code}}
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{$item->quantity}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button"
+                                                                class="btn btn-sm @if($item->is_packed == 0) btn-primary @else btn-warning @endif">
+                                                            @if($item->is_packed == 0)
+                                                                Packed
+                                                            @else
+                                                                Remain
+                                                            @endif
+                                                        </button>
+                                                    </td>
+                                                    <td>
+                                                        <button onclick="undoOutOfStock({{$item->id}})" class="btn btn-sm btn-primary"><i class="fa fa-undo"></i> Undo</button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="edited" role="tabpanel" aria-labelledby="pills-edited-tab">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h5>Edited Product List</h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered text-center" id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>On Hand</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if(!$editedProducts->isEmpty())
+                                            @foreach($editedProducts as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads/').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->item_code}}
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{$item->quantity}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button"
+                                                                class="btn btn-sm @if($item->is_packed == 0) btn-success @else btn-warning @endif">
+                                                            @if($item->is_packed == 0)
+                                                                Packed
+                                                            @else
+                                                                Remain
+                                                            @endif
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="location-incorrect" role="tabpanel"
+                     aria-labelledby="pills-location-incorrect-tab">
+                    <div class="row">
+                        <div class="col-md-12 text-center">
+                            <h5>Incorrect Location Product List</h5>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="container-fluid">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered text-center" id="productDataTable">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 40%;">Item Name</th>
+                                            <th>Item Image</th>
+                                            <th>Barcode</th>
+                                            <th>Order Qty</th>
+                                            <th>Picked Qty</th>
+                                            <th>Packed Qty</th>
+                                            <th>On Hand</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        @if(!$incorrectLocationProducts->isEmpty())
+                                            @foreach($incorrectLocationProducts as $item)
+                                                <tr>
+                                                    <td>
+                                                        <p>{{$item->product_name}}</p>
+                                                        <p>{{$item->sell_line_note}}</p>
+                                                    </td>
+                                                    <td>
+                                                        <img src="{{asset('/uploads').$item->image}}"
+                                                             class="img img-responsive" width="75px">
+                                                    </td>
+                                                    <td>
+                                                        {{$item->item_code}}
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        @if($item->updated_piking_qty != null)
+                                                            {{$item->updated_piking_qty}}
+                                                        @else
+                                                            {{$item->quantity}}
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{$item->quantity}}
+                                                    </td>
+                                                    <td>
+                                                        {{round($item->stock)}}
+                                                    </td>
+                                                    <td>
+                                                        <button type="button"
+                                                                class="btn btn-sm @if($item->is_packed == 0) btn-primary @else btn-warning @endif">
+                                                            @if($item->is_packed == 0)
+                                                                Packed
+                                                            @else
+                                                                Remain
+                                                            @endif
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        @endif
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLabel">Packing Slip & Invoice</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <form action="{{action('Restaurant\KitchenController@finalizePackingOrder', [$transaction_id])}}">
+                <input id="timingCount" type="hidden" name="timingCount"
+                        value="">
+                <input type="hidden" name="finalizeprint"
+                        value="print">
+                <button type="submit" class="btn btn-success">
+                    <i class="fa fa-check"></i> Print Invoice
+                </button>
+            </form>
+            <form action="{{action('Restaurant\KitchenController@finalizePackingOrder', [$transaction_id])}}">
+                <input id="timingCount" type="hidden" name="timingCount"
+                        value="">
+                <input type="hidden" name="finalizeprint"
+                        value="finalizeprintpackingslip">
+                <button type="submit" class="btn btn-primary  mt-1">
+                    <i class="fa fa-check"></i> Print Packing Slip
+                </button>
+            </form>
+            <form action="{{action('Restaurant\KitchenController@finalizePackingOrder', [$transaction_id])}}">
+                <input id="timingCount" type="hidden" name="timingCount"
+                        value="">
+                <input type="hidden" name="finalizeprint"
+                        value="printboth">
+                <button type="submit" class="btn btn-warning mt-1">
+                    <i class="fa fa-check"></i> Both (Packing Slip & Invoice)
+                </button>
+            </form>
+          </div>
+          <!-- <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Save changes</button>
+          </div> -->
+        </div>
+      </div>
+    </div>
+    <div style="margin-top: 50px;" class="row">
+        <div class="col-sm-9">
+            <div class="row">
+                <div style="padding-left: 50px;" class="col-sm-7">
+                    <div class="row p-0 m-0">
+                        <div class="col-md-4 p-0 m-0">
+                            @if($orderProduct != null)
+                                @if($orderProduct->id != null)
+                                    <a href="{{action('Restaurant\KitchenController@saveAndHoldPacking', [$orderProduct->transaction_id])}}"
+                                        class="btn btn-primary">
+                                        <i class="fa fa-pause"></i> Save & Hold
+                                    </a>
+                                @else
+                                    <a href="#"
+                                        class="btn btn-primary">
+                                        <i class="fa fa-pause"></i> Save & Hold
+                                    </a>
+                                @endif
+                            @else
+                                <a href="#"
+                                    class="btn btn-primary">
+                                    <i class="fa fa-pause"></i> Save & Hold
+                                </a>
+                            @endif
+                        </div>
+                        <div class="col-md-4 p-0 m-0">
+                            @if($orderdetails->isEmpty() && $packedProductsCount > 0)
+                                <form action="{{action('Restaurant\KitchenController@finalizePackingOrder', [$transaction_id])}}">
+                                    <input id="timingCount" type="hidden" name="timingCount"
+                                            value="">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fa fa-check"></i> Finalize
+                                    </button>
+                                </form>
+                            @else
+                                <button class="btn btn-success">
+                                    <i class="fa fa-check"></i> Finalize
+                                </button>
+                            @endif
+                        </div>
+
+                        <div class="col-md-4 p-0 m-0">
+                            @if($orderdetails->isEmpty() && $packedProductsCount > 0)
+                                <form action="{{action('Restaurant\KitchenController@finalizePackingOrder', [$transaction_id])}}">
+                                    <input id="timingCount" type="hidden" name="timingCount"
+                                            value="">
+                                    <input type="hidden" name="finalizeprint"
+                                            value="print">
+                                    <!--<button type="submit" class="btn btn-success">-->
+                                    <!--    <i class="fa fa-check"></i> Finalize & Print-->
+                                    <!--</button>-->
+                                    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#exampleModal">
+                                    <i class="fa fa-check"></i> Finalize & Print
+                                    </button>
+                                </form>
+                            @else
+                                <button class="btn btn-success">
+                                    <i class="fa fa-check"></i> Finalize & Print
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-5">
+                    @if($transaction_id != null)
+                        <a style="margin-right: 15px;" href="{{action('Restaurant\KitchenController@cancelPakingOrder', [$transaction_id])}}"
+                            class="btn btn-danger leave-page">
+                            <i class="fa fa-window-close"></i> Clear
+                        </a>
+                    @else
+                        <a style="margin-right: 15px;" href="/modules/orders"
+                            class="btn btn-danger leave-page">
+                            <i class="fa fa-window-close"></i> Clear
+                        </a>
+                    @endif
+                    @if($orderProduct != null)
+                        @if($orderProduct->id != null)
+                            <a href="{{action('Restaurant\KitchenController@orderQueue', [$orderProduct->transaction_id])}}"
+                                class="btn btn btn-warning leave-page">
+                                <i class="fa fa-th"></i> Order Queue
+                            </a>
+                        @else
+                            <a href="/modules/orders"
+                                class="btn btn btn-warning leave-page">
+                                <i class="fa fa-th"></i> Order Queue
+                            </a>
+                        @endif
+                    @else
+                            <a href="/modules/orders"
+                                class="btn btn btn-warning leave-page">
+                                <i class="fa fa-th"></i> Order Queue
+                            </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-3"></div>
+    </div>
+@endsection
+@section('scripts')
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+            integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(function () {
+            $('#search_product').autocomplete({
+                source: function (request, response) {
+                    $.ajax({
+                        type: "GET",
+                        contentType: "application/json; charset=utf-8",
+                        url: "{{action('Restaurant\KitchenController@packProduct')}}",
+                        dataType: "json",
+                        data: {
+                            order_id: "@if($orderProduct !=null)#{{$orderProduct->invoice_no}}@endif",
+                            searchKey: request,
+                        },
+                        success: function (data) {
+                            if(data.status === true){
+                                location.reload();
+                            }else{
+                                document.getElementById("search_product").value = "";
+                                var audio = $('#error-audio')[0];
+                                if (audio !== undefined) {
+                                    audio.play();
+                                }
+                                if(data.msg)
+                                {
+                                    alert(data.msg);
+                                }else{
+                                    alert("Product Is Not Available!");
+                                }
+                            }
+                        }
+                    });
+                },
+                minLength: 3,
+                select: function (event, ui) {
+                    location.reload();
+                }
+            });
+        });
+        $(document).on("click", ".leave-page", function(e){
+            var r = confirm("Are you sure you want to leave this page");
+            if (r == false) {
+                e.preventDefault();
+            }
+        });
+
+        function editQty(id, packing_qty) {
+            let p_qty_box = document.getElementById('updateQty_'+id) ;
+            let pre_qty = p_qty_box.innerText;
+            $('#updateQty_'+id).html('<input data-content="'+id+'" data-packing_qty="'+packing_qty+'" onkeypress="getProductQty(event, id)" style="width:60px;" type="text" value="'+pre_qty+'" name="produc_qty" class="getProductQty" id="inp_ord_'+id+'">');
+            // alert(id);
+        }
+
+        function packProduct(id, all_pack=false) {
+            // console.log('id:', id)
+            $.ajax({
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                url: "{{action('Restaurant\KitchenController@packProduct')}}",
+                dataType: "json",
+                data: {
+                    order_id: "@if($orderProduct !=null)#{{$orderProduct->invoice_no}}@endif",
+                    searchKey: id,
+                    packed_by_id: id,
+                    all_pack: all_pack,
+                },
+                success: function (data) {
+                    console.log('data:', data)
+                    location.reload();
+                }
+            });
+        }
+
+        // document.getElementById("pack_btn").disabled = false;
+        function getProductQty(e, id){
+
+            let key=e.keyCode || e.which;
+            let p_qty =  e.target.value;
+            let p_id = e.target.getAttribute('data-content');
+            let packing_qty = e.target.getAttribute('data-packing_qty');
+            
+            let ord_value = document.getElementById("inp_ord_"+p_id).value;
+            if (key===13){
+                if(parseInt(ord_value) < parseInt(packing_qty) )
+                {
+                    document.getElementById("pack_btn_"+p_id).disabled = true;
+                }else{
+                    document.getElementById("pack_btn_"+p_id).disabled = false;
+                        {{-- url:'{{action('Restaurant\KitchenController@updateProductQty')}}', --}}
+                    var url = '{{action('Restaurant\KitchenController@editProductQty')}}';
+                    var method = 'POST';
+                    if(p_qty == 0) { 
+                        url = '/modules/kitchen/product/out-of-stock/'+p_id;
+                        method = 'GET';
+                    }
+                    $.ajax({
+                        url:url,
+                        type:method,
+                        data:{
+                            _token:'{{csrf_token()}}',
+                            p_id:p_id,
+                            p_qty:p_qty
+                        },
+                        success:function (response) {
+                            console.log('response:', response)
+                            location.reload();
+                        }
+                    });
+                }
+            }
+        }
+        function undoPacking(id){
+            $.ajax({
+                url:"/modules/kitchen/packing/undo/"+ id,
+                type:'GET',
+                data: null,
+                success:function () {
+                    location.reload();
+                }
+            })
+        }
+        function undoOutOfStock(id){
+            $.ajax({
+                url:"/modules/kitchen/outofstock/undo/"+ id,
+                type:'GET',
+                data: null,
+                success:function () {
+                    location.reload();
+                }
+            })
+        }
+    </script>
+    <script>
+        @if(old('status') && old('status') == 'true' && old('finalizeprint') == 'print')
+        $(document).ready(function () {
+            var page = "{{old('iurl')}}";
+            window.open(page, '_blank').focus();
+        });
+        @elseif(old('status') && old('status') == 'true' && old('finalizeprint') == 'finalizeprintpackingslip')
+        $(document).ready(function () {
+            var page = "{{old('surl')}}";
+            window.open(page, '_blank').focus();
+        });
+        @elseif(old('status') && old('status') == 'true' && old('finalizeprint') == 'printboth')
+        $(document).ready(function () {
+            var spage = "{{old('surl')}}";
+            window.open(spage, '_blank').focus();
+
+            var ipage = "{{old('iurl')}}";
+            window.open(ipage, '_blank').focus();
+        });
+        @endif  
+    </script>
+@endsection

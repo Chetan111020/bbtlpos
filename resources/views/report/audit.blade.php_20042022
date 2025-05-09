@@ -1,0 +1,167 @@
+@extends('layouts.app')
+@section('title', __( 'report.profit_loss' ))
+
+@section('content')
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>Audit Report
+    </h1>
+</section>
+
+<!-- Main content -->
+<section class="content" ng-app="auditapp" ng-controller="auditctrl">
+    <div class="row">
+        <div class="col-md-12">
+            @component('components.filters', ['title' => __('report.filters')])
+                <div class="col-md-4" style="display:flex;">
+                    <div class="form-group" style="width:100%;">
+                        {!! Form::label('ssr_location_id',  __('Module') . ':') !!}
+                        <select id="moduleselect" class="form-control select2" style="width:100%;">
+                            @foreach($modules as $item)
+                            <option value="{{$item}}">{{$item}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group" style="display:flex;margin-left:1rem;">
+                        <button class="btn btn-primary" style="margin-top:auto;" type="button" ng-click="reloadData()">Apply</button>
+                    </div>
+                </div>
+            @endcomponent
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12 shadow rounded table-responsive">
+            <table class="table table-bordered table-stripeds bg-white">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Module</th>
+                        <th>Event</th>
+                        <!--<th>Old Value</th>-->
+                        <!--<th>New Value</th>-->
+                        <th style="width:100px">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr ng-repeat-start="item in audits">
+                        <td><% item.timestamp %></td>
+                        <td><% item.auditable_type %></td>
+                        <td><% item.event %></td>
+                        <!--<td>-->
+                        <!--    <table class="table table-bordered" ng-hide="item.visibility">-->
+                        <!--        <tr ng-repeat="(key,value) in item.old_short">-->
+                        <!--            <th style="width:50% !important"><% key %></th>-->
+                        <!--            <td style="width:50% !important"><% value %></td>-->
+                        <!--        </tr>-->
+                        <!--    </table>-->
+                        <!--    <table class="table table-bordered" ng-show="item.visibility">-->
+                        <!--        <tr ng-repeat="(key,value) in item.old_values">-->
+                        <!--            <th style="width:50% !important"><% key %></th>-->
+                        <!--            <td style="width:50% !important"><% value %></td>-->
+                        <!--        </tr>-->
+                        <!--    </table>-->
+                        <!--</td>-->
+                        <!--<td>-->
+                        <!--    <table class="table table-bordered" ng-hide="item.visibility">-->
+                        <!--        <tr ng-repeat="(key,value) in item.new_short">-->
+                        <!--            <th style="width:50% !important"><% key %></th>-->
+                        <!--            <td style="width:50% !important"><% value %></td>-->
+                        <!--        </tr>-->
+                        <!--    </table>-->
+                        <!--    <table class="table table-bordered" ng-show="item.visibility">-->
+                        <!--        <tr ng-repeat="(key,value) in item.new_values">-->
+                        <!--            <th style="width:50% !important"><% key %></th>-->
+                        <!--            <td style="width:50% !important"><% value %></td>-->
+                        <!--        </tr>-->
+                        <!--    </table>-->
+                        <!--</td>-->
+                        <td>
+                            <div><% item.new_values.length %>
+                                <span class="btn" ng-click="showData($index)" ng-hide="item.visibility">Show Details</span>
+                                <span class="btn" ng-click="hideData($index)" ng-show="item.visibility">Hide Details</span>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <tr ng-repeat-end ng-show="item.visibility">
+                        <td colspan="4">
+                            <table class="table">
+                                <tr>
+                                    <td class="bg-danger" style="width:50% !important">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th colspan="2" style="text-align:center">Old Values</th>
+                                            </tr>
+                                            <tr ng-repeat="(key,value) in item.old_values">
+                                                <th style="width:50% !important"><% key %></th>
+                                                <td style="width:50% !important"><% value %></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <td class="bg-success" style="width:50% !important">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th colspan="2" style="text-align:center">New Values</th>
+                                            </tr>
+                                            <tr ng-repeat="(key,value) in item.new_values">
+                                                <th style="width:50% !important"><% key %></th>
+                                                <td style="width:50% !important"><% value %></td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+</section>
+<!-- /.content -->
+@stop
+@section('javascript')
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+<script>
+var angularapp = angular.module('auditapp', []);
+
+angularapp.config(function($interpolateProvider) {
+    $interpolateProvider.startSymbol('<%');
+    $interpolateProvider.endSymbol('%>');
+  });
+
+angularapp.controller('auditctrl', function ($scope, $http) {
+    
+    var path = "/api/reports/audit";
+    
+    $scope.showData = function(index){
+        $scope.audits[index].visibility = true;
+    };
+    $scope.hideData = function(index){
+        $scope.audits[index].visibility = false;
+    };
+    
+    $scope.reloadData = function(){
+      var moduleselect = document.getElementById('moduleselect');
+      var mod = moduleselect.value;
+      var mods = mod.split('\\');
+      path = "/api/reports/audit/" + mods[mods.length - 1];
+      console.log(path);
+      initLoader();
+    };
+    var initLoader = function(){
+        
+        $http.get(path).then(function (response) {
+            console.log(response.data);
+            $scope.audits = response.data;
+
+        }, function (reason) {
+            
+        });
+    }
+    initLoader();
+});
+</script>
+@endsection

@@ -1,0 +1,41 @@
+.packing{
+    background-color: white;
+    color: black;
+    border: 1px solid lightgray;
+}
+
+.picked{
+    background-color: #a5dc86;
+    border: 1px solid lightgray;
+    color: black;
+}
+
+.invoiced{
+    background-color: #fffd7a;
+    border: 1px solid lightgray;
+    color: black;
+}
+
+.not-there{
+    background-color: #6db8ff;
+    border: 1px solid lightgray;
+    color: black;
+}
+
+.edited{
+    background-color: rgb(243, 92, 92);
+    border: 1px solid lightgray;
+    color: black;
+}
+
+.location_incorrect{
+    background-color: #b06cfd;
+    border: 1px solid lightgray;
+    color: black;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link{
+    background-color: inherit;
+    color: black;
+    border-radius: unset;
+}

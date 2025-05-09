@@ -1,0 +1,276 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\BusinessLocation;
+
+use App\Charts\CommonChart;
+use App\Currency;
+use App\Transaction;
+use App\Utils\BusinessUtil;
+use Carbon\Carbon;
+use App\Utils\ModuleUtil;
+use App\Utils\TransactionUtil;
+use App\VariationLocationDetails;
+use Datatables;
+use DB;
+use Illuminate\Http\Request;
+use App\Utils\Util;
+use App\Utils\RestaurantUtil;
+use App\User;
+use App\Product;
+use App\Contact;
+use App\Variation;
+
+use DateTime;
+
+use Illuminate\Notifications\DatabaseNotification;
+
+class AccountDashboardController extends Controller
+{
+    /**
+     * All Utils instance.
+     *
+     */
+    protected $businessUtil;
+    protected $transactionUtil;
+    protected $moduleUtil;
+    protected $commonUtil;
+    protected $restUtil;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct(
+        BusinessUtil $businessUtil,
+        TransactionUtil $transactionUtil,
+        ModuleUtil $moduleUtil,
+        Util $commonUtil,
+        RestaurantUtil $restUtil
+    ) {
+        $this->businessUtil = $businessUtil;
+        $this->transactionUtil = $transactionUtil;
+        $this->moduleUtil = $moduleUtil;
+        $this->commonUtil = $commonUtil;
+        $this->restUtil = $restUtil;
+    }
+
+    /**
+     * Show the application dashboard.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        $business_id = request()->session()->get('user.business_id');
+        $all_locations = BusinessLocation::forDropdown($business_id)->toArray();
+        if (!auth()->user()->can('dashboard.data')) {
+            return view('home.index');
+        }
+
+        return view('home.account_dashboard')->with(compact('all_locations'));
+    }
+    
+    //  public function Index()
+    // {
+    //     return view('dashboard.picking_packing');
+    // } 
+    
+      public function getTotals()
+    {
+        $business_id = request()->session()->get('user.business_id');
+
+        $start = '';
+        $end = '';
+        if (!empty(request()->start_date) && !empty(request()->end_date)) {
+            $start = request()->start_date.' 00:00:00';
+            $end =  request()->end_date. ' 23:59:59';
+        }
+    
+        $dtcurr = $end;
+        $dtbefore =$start;
+        // echo $dtbefore;
+        
+        $received = Transaction::where('type', 'sell')
+            ->where('status', 'final')
+            ->where('order_picking_status', '=', '0')
+            ->whereDate('transaction_date', '>=', $dtbefore)
+            ->whereDate('transaction_date', '<=', $dtcurr)
+            ->count();
+
+
+        // Total Sell items count 
+        $totalSellItems = Transaction::join('transaction_sell_lines', 'transactions.id', '=', 'transaction_sell_lines.transaction_id')
+                ->where('transactions.type', 'sell')
+                ->where('transactions.status', 'final')
+                ->where('transactions.transaction_date', '>=', $dtbefore)
+                ->where('transactions.transaction_date', '<=', $dtcurr)
+                ->sum('transaction_sell_lines.quantity');
+                
+    
+        
+        // Total Purchase items count 
+        $totalItemPurchase = Transaction::join('purchase_lines', 'transactions.id', '=', 'purchase_lines.transaction_id')
+            ->where('transactions.type', 'purchase')
+            ->where('transactions.transaction_date', '>=', $dtbefore)
+            ->where('transactions.transaction_date', '<=', $dtcurr)
+            ->sum('purchase_lines.quantity');
+                
+        // Ledger Total
+        $ledgerTotal = Contact::sum('balance');
+        
+          
+        // Purchase Payment Due
+        $paymentDue = $this->getPurchaseDue($business_id,$dtbefore,$dtcurr);
+        
+        //Transaction types
+        $transaction_types = [
+            'purchase_return', 'sell_return', 'expense', 'stock_adjustment', 'sell_transfer', 'purchase', 'sell'
+        ];
+        
+        
+        $expenses = $this->transactionUtil->getTransactionTotals($business_id, $transaction_types, $dtbefore, $dtcurr, $location_id = null ,$created_by = null);
+        $totalExpense = $expenses['total_expense'];
+        
+        // echo "<pre>";
+        // print_r($expenses);
+        // die;
+        $total = [
+            $paymentDue,
+            $ledgerTotal,
+            $totalItemPurchase,
+            $totalSellItems,
+            $ledgerTotal,
+            $paymentDue,
+            $totalExpense,
+        ];
+
+        return $total;
+    }
+    
+    public function getPurchaseDue($business_id,$start,$end){
+        
+        $purchases = $this->transactionUtil->getListPurchases($business_id);
+
+        $permitted_locations = auth()->user()->permitted_locations();
+        if ($permitted_locations != 'all') {
+            $purchases->whereIn('transactions.location_id', $permitted_locations);
+        }
+        if (!empty($start) && !empty($end)) {
+            $purchases->whereDate('transactions.transaction_date', '>=', $start)
+                        ->whereDate('transactions.transaction_date', '<=', $end);
+        }
+
+        if (!auth()->user()->can('purchase.view') && auth()->user()->can('view_own_purchase')) {
+            $purchases->where('transactions.created_by', request()->session()->get('user.id'));
+        }
+        $purchaseResult = $purchases->get();
+        
+        $dueTotal = $purchaseResult->sum(function($row){
+            if($row->discount_type && $row->discount_amount){
+                if($row->discount_type == 'fixed'){
+                    // $due = $row->final_total - $row->discount_amount - $row->amount_paid;
+                    $due = $row->final_total - $row->amount_paid;
+                }
+                if($row->discount_type == 'percentage'){
+                    $percentage_amt = ($row->amount_paid * $row->discount_amount) / 100;
+                    $due = $row->final_total - $percentage_amt - $row->amount_paid;
+                }
+               
+            }else if($row->is_advance == 1 && $row->payment_status == 'paid'){
+                     $due =  $row->amount - $row->final_total - $row->advanceamt;
+            }
+            else{
+                $due = $row->final_total - $row->amount_paid;
+            }
+            return $due;
+            
+        });
+        
+        return $dueTotal;
+    }
+
+    // public function TotalOrderChart()
+    // {
+    //     $start = request()->start;
+    //     $end = request()->end;
+    //     $dtcurr = new DateTime($end);
+    //     $dtbefore = new DateTime($start);
+    //     $complete_order = Transaction::where('type', 'sell')
+    //         ->where('status', 'final')
+    //         ->select(DB::raw("(COUNT(*)) as count"), DB::raw('DATE(transaction_date) as trdate'))
+    //         ->where('order_picking_status', '=', '2')->where('order_packing_status', '=', '2')
+    //         ->whereDate('transaction_date', '>=', $dtbefore->format('Y-m-d'))
+    //         ->whereDate('transaction_date', '<=', $dtcurr->format('Y-m-d'))
+    //         ->groupBy('trdate')
+    //         ->orderBy('trdate')
+    //         ->get();
+
+    //     $pending_order = Transaction::where('type', 'sell')
+    //         ->where('status', 'final')
+    //         ->select(DB::raw("(COUNT(*)) as count1"), DB::raw('DATE(transaction_date) as trdate'))
+    //         // ->where('order_picking_status','!=' ,'2')
+    //         ->where('order_packing_status', '!=', '2')
+    //         ->whereDate('transaction_date', '>=', $dtbefore->format('Y-m-d'))
+    //         ->whereDate('transaction_date', '<=', $dtcurr->format('Y-m-d'))
+    //         ->groupBy('trdate')
+    //         ->orderBy('trdate')
+    //         ->get();
+
+    //     $total_order = Transaction::where('type', 'sell')
+    //         ->where('status', 'final')
+    //         ->select(DB::raw("(COUNT(*)) as total_order"), DB::raw('DATE(transaction_date) as trdate'))
+    //         ->whereDate('transaction_date', '>=', $dtbefore->format('Y-m-d'))
+    //         ->whereDate('transaction_date', '<=', $dtcurr->format('Y-m-d'))
+    //         ->groupBy('trdate')
+    //         ->orderBy('trdate')
+    //         ->get();
+
+    //     $dates = [];
+    //     for ($i = $dtbefore; $i <= $dtcurr; $i->modify('+1 day')) {
+    //         array_push($dates, $i->format('Y-m-d'));
+    //     }
+
+    //     $all_complete_order = [];
+    //     $n = 0;
+    //     $m = 0;
+    //     $o = 0;
+    //     $all_pending_order = [];
+    //     $all_order = [];
+    //     foreach ($dates as $date) {
+
+    //         if (in_array($date, array_column($complete_order->toArray(), 'trdate'))) {
+    //             array_push($all_complete_order, $complete_order[$n]->count ?? 0);
+    //             $n++;
+    //         } else {
+    //             array_push($all_complete_order, 0);
+    //         }
+
+    //         if (in_array($date, array_column($pending_order->toArray(), 'trdate'))) {
+    //             array_push($all_pending_order, $pending_order[$m]->count1 ?? 0);
+    //             $m++;
+    //         } else {
+    //             array_push($all_pending_order, 0);
+    //         }
+
+    //         if (in_array($date, array_column($total_order->toArray(), 'trdate'))) {
+    //             array_push($all_order, $total_order[$o]->total_order ?? 0);
+    //             $o++;
+    //         } else {
+    //             array_push($all_order, 0);
+    //         }
+    //     }
+
+    //     $mainChart = [
+    //         $all_complete_order,
+    //         $all_pending_order,
+    //         $all_order,
+    //         $dates
+    //     ];
+    //     return $mainChart;
+    // }
+  
+
+}

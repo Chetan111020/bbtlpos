@@ -1,0 +1,272 @@
+@extends('layouts.app')
+@section('title', __('lang_v1.sell_return'))
+
+@section('content')
+
+    <!-- Content Header (Page header) -->
+    <section class="content-header no-print">
+        <h1>@lang('Credit Memos')</h1>
+    </section>
+
+    <!-- Main content -->
+    <section class="content no-print">
+
+        {{--{!! Form::hidden('location_id', $sell->location->id, ['id' => 'location_id', 'data-receipt_printer_type' => $sell->location->receipt_printer_type ]); !!}--}}
+        <input type="hidden" name="location_id" value="@if($sell != null){{$sell->location->id}}@endif" id="location_id"
+               data-receipt_printer_type="@if($sell != null){{$sell->location->receipt_printer_type}}@endif">
+        {!! Form::open(['url' => action('SellReturnController@store'), 'method' => 'post', 'id' => 'sell_return_form' ]) !!}
+        {{--	{!! Form::hidden('transaction_id', $sell->id); !!}--}}
+        {{--<input type="hidden" name="transaction_id" id="transaction_id" value="@if($sell != null){{$sell->id}}@endif">--}}
+        <div class="box box-solid">
+        <!-- <div class="box-header">
+			<h3 class="box-title">@lang('lang_v1.parent_sale')</h3>
+		</div> -->
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label for="customer_name">Customer Name.:</label>
+                            {!! Form::select('customer_name',$customers,null, ['id' =>'getCustomer','class' => 'form-control select2','placeholder' => 'Please Select']); !!}
+                            {{--<input class="form-control" name="customer_name" type="text" id="customer_name">--}}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label for="invoice_no">Invoice No.:</label>
+                            <input class="form-control" name="invoice_no" type="text" id="invoice_no">
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label for="transaction_date">Date:*</label>
+                            <div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-calendar"></i>
+							</span>
+                                <input class="form-control" readonly="" required="" name="transaction_date" type="text"
+                                       value="02/21/2021 03:39" id="transaction_date" aria-required="true">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4">
+                        <strong>@lang('sale.invoice_no'):</strong> <span class="invoice_no"></span><br>
+                        <strong>@lang('messages.date')
+                            :</strong> <span class="invoice_date"></span>
+                    </div>
+                    <div class="col-sm-4">
+                        <strong>@lang('contact.customer'):</strong> <span class="customer_name"></span>
+                        <br>
+                        <strong>Sales Rep:</strong> <span class="sales_rep"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="box box-solid">
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-sm-8 col-md-offset-2">
+                        <div class="form-group">
+                            {{--                        <!-- {!! Form::label('invoice_no', __('sale.invoice_no').':') !!} -->--}}
+                            {!! Form::text('search_key',null, ['id' =>'search_sell_return','class' => 'form-control']); !!}
+                        </div>
+                    </div>
+                <!-- <div class="col-sm-3">
+					<div class="form-group">
+						{!! Form::label('transaction_date', __('messages.date') . ':*') !!}
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                <i class="fa fa-calendar"></i>
+                            </span>
+                @php
+                    $transaction_date = !empty($sell->return_parent->transaction_date) ? $sell->return_parent->transaction_date : 'now';
+                @endphp
+                {!! Form::text('transaction_date', @format_datetime($transaction_date), ['class' => 'form-control', 'readonly', 'required']); !!}
+                        </div>
+                    </div>
+                </div> -->
+                    <div class="col-sm-12">
+                        <table class="table bg-gray" id="sell_return_table">
+                            <thead>
+                            <tr class="bg-green">
+                                <!-- <th>#</th> -->
+                                <th>@lang('product.product_name')</th>
+                                <th>@lang('sale.unit_price')</th>
+                                <!-- <th>@lang('lang_v1.sell_quantity')</th> -->
+                                <th>@lang('lang_v1.return_quantity')</th>
+                                <th>Garbage Qty</th>
+                                <!-- <th>P. Price</th> -->
+                                <!-- <th>Invoice No</th> -->
+                                <!-- <th>P. Since</th> -->
+                                <th>@lang('lang_v1.return_subtotal')</th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row">
+                    @php
+                        $discount_type = 0.00;
+                        $discount_amount = 0.00;
+                    @endphp
+                    @if($sell != null)
+                        @php
+                            $discount_type = !empty($sell->return_parent->discount_type) ? $sell->return_parent->discount_type : $sell->discount_type;
+                            $discount_amount = !empty($sell->return_parent->discount_amount) ? $sell->return_parent->discount_amount : $sell->discount_amount;
+                        @endphp
+                    @endif
+                    <div class="col-sm-4" style="display: none;">
+                        <div class="form-group">
+                            {!! Form::label('discount_type', __( 'purchase.discount_type' ) . ':') !!}
+                            {!! Form::select('discount_type', [ '' => __('lang_v1.none'), 'fixed' => __( 'lang_v1.fixed' ), 'percentage' => __( 'lang_v1.percentage' )], ($discount_type)? $discount_type : 'fixed', ['class' => 'form-control']); !!}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            {!! Form::label('discount_amount', __( 'Adjustment Amount' ) . ':') !!}
+                            {!! Form::text('discount_amount', @num_format($discount_amount), ['class' => 'form-control input_number']); !!}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            {!! Form::label('note', __( 'Note' ) . ':') !!}
+                            {!! Form::textarea('note', null , ['class' => 'form-control', 'rows' => 2]); !!}
+                        </div>
+                    </div>
+                </div>
+                @php
+                    $tax_percent = 0;
+                    if(!empty($sell->tax)){
+                        $tax_percent = $sell->tax->amount;
+                    }
+                @endphp
+                {{--            {!! Form::hidden('tax_id', $sell->tax_id); !!}--}}
+                <input type="hidden" name="tax_id" value="@if($sell != null){{$sell->tax_id}}@endif">
+                {!! Form::hidden('tax_amount', 0, ['id' => 'tax_amount']); !!}
+                {!! Form::hidden('tax_percent', $tax_percent, ['id' => 'tax_percent']); !!}
+                <div class="row">
+                    <div class="col-sm-12 text-right">
+                        <strong>@lang('lang_v1.total_return_discount'):</strong>
+                        &nbsp;(-) <span id="total_return_discount"></span>
+                    </div>
+                    <div class="col-sm-12 text-right">
+                        <strong>@lang('lang_v1.total_return_tax') - @if(!empty($sell->tax))({{$sell->tax->name}}
+                            - {{$sell->tax->amount}}%)@endif : </strong>
+                        &nbsp;(+) <span id="total_return_tax"></span>
+                    </div>
+                    <div class="col-sm-12 text-right">
+                        <strong>@lang('lang_v1.return_total'): </strong>&nbsp;
+                        <span id="net_return">0</span>
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <button type="submit" class="btn btn-primary pull-right">@lang('messages.save')</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {!! Form::close() !!}
+    </section>
+@stop
+@section('javascript')
+    <script src="{{ asset('js/printer.js?v=' . $asset_v) }}"></script>
+    <script src="{{ asset('js/sell_return.js?v=' . $asset_v) }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('form#sell_return_form').validate();
+            update_sell_return_total();
+            //Date picker
+            // $('#transaction_date').datepicker({
+            //     autoclose: true,
+            //     format: datepicker_date_format
+            // });
+        });
+        $(document).on('change', 'input.return_qty, input.gar_box_return_qty, input.gar_piece_return_qty,  #discount_amount, #discount_type', function () {
+            update_sell_return_total()
+        });
+
+        function update_sell_return_total() {
+            var net_return = 0;
+            $('table#sell_return_table tbody tr').each(function () {
+                let g_box_quantity = __read_number($(this).find('input.gar_box_return_qty'));
+                let g_piece_quantity = __read_number($(this).find('input.gar_piece_return_qty'));
+                let quantity = __read_number($(this).find('input.return_qty')) + +g_box_quantity + +g_piece_quantity;
+                let unit_price = __read_number($(this).find('input.unit_price'));
+                let subtotal = quantity * unit_price;
+                $(this).find('.return_subtotal').text(__currency_trans_from_en(subtotal, true));
+                net_return += subtotal;
+            });
+            let discount = 0;
+            if ($('#discount_type').val() == 'fixed') {
+                discount = __read_number($("#discount_amount"));
+            } else if ($('#discount_type').val() == 'percentage') {
+                let discount_percent = __read_number($("#discount_amount"));
+                discount = __calculate_amount('percentage', discount_percent, net_return);
+            }
+            discounted_net_return = net_return - discount;
+
+            let tax_percent = $('input#tax_percent').val();
+            let total_tax = __calculate_amount('percentage', tax_percent, discounted_net_return);
+            let net_return_inc_tax = total_tax + discounted_net_return;
+
+            $('input#tax_amount').val(total_tax);
+            $('span#total_return_discount').text(__currency_trans_from_en(discount, true));
+            $('span#total_return_tax').text(__currency_trans_from_en(total_tax, true));
+            $('span#net_return').text(__currency_trans_from_en(net_return_inc_tax, true));
+        }
+    </script>
+
+    <script>
+        $(document).ready(function () {
+            $('#getCustomer').on('change',function () {
+               let customer_id = $(this).val();
+                $.ajax({
+                    type: "GET",
+                    url: "/sell-return/customer/invoice",
+                    data: {
+                        customer_id: customer_id,
+                    },
+                    success: function (data) {
+                        $('#invoice_no').val(data.invoice_no);
+                        $('.invoice_no').text(data.invoice_no);
+                        $('.invoice_date').text(data.updated_at);
+                        $('.sales_rep').text(data.sales_person.first_name+' '+data.sales_person.last_name);
+                        $('.customer_name').text(data.contact.first_name+' '+data.contact.last_name);
+                    }
+                });
+            });
+
+            $('#search_key').autocomplete({
+                source: function (request, response) {
+                    let _searchKey = request.term;
+                    $("#setSearchKey").val(_searchKey);
+                   let custId = $("#getCustomer").val();
+                   if(custId != ''){
+                        $.ajax({
+                            type: "GET",
+                            url: "{{action('SellReturnController@getItemForReturn')}}",
+                            data: {
+                                searchKey: _searchKey,
+                                customer_id: custId,
+                            },
+                            success: function (data) {
+                                $('#sell_return_table tbody').html(data);
+                            }
+                        });
+
+                    }else{
+                        alert("Please select customer!");
+                    }
+                },
+                minLength: 3,
+                select: function (event, ui) {
+                    location.reload();
+                }
+            });
+        });
+    </script>
+@endsection

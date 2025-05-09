@@ -1,0 +1,331 @@
+@extends('layouts.app')
+<title >Opening Balance Report </title>
+@section('content')
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>Balance Report</h1>
+</section>
+<style>
+    .table-bordered {
+    border: 1px solid #000000 !important;
+}
+    tbody, td{
+        text-align: leftcenter;
+    }
+    .tfoot{
+        bottom: 0;
+        position: relative;
+   }
+</style>
+<!-- Main content -->
+<section class="content">
+
+    <div class="row">
+        <div class="col-md-12">
+            @component('components.filters', ['title' => __('report.filters')])
+             <form action="{{route('balance.filter')}}" method="POST" autocomplete="off">
+                 @csrf
+                <div class="col-md-3">
+                    <div class="form-group">
+                        {!! Form::label('br_account_rep', 'Account Rep:') !!}
+                        {!! Form::select('br_account_rep', $users, $acc_rep, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'br_account_rep']); !!}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <div class="form-group col-md-4" style="width: 216px;">
+                  <label>Select Date Range :-</label>
+                    <div class='input-group date'>
+                        <input name="fromDate" readonly="" id="reportrange" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;" autocomplete="off">
+                     </div>
+                </div>
+
+                    </div>
+                </div>
+
+                 <div class="form-group col-md-4">
+                    <div class='input-group date' style="margin-top: 25px;">
+                    <button class="btn btn-primary"><i class="fa fa-search" aria-hidden="true"></i>
+                    Search</button>
+                    </div>
+            </div>
+            </form>
+            {{csrf_field()}}
+                <!-- <div class="col-md-3">
+                    <div class="form-group">
+                        <div class="checkbox">
+                            <label>
+                                <br>
+                              {!! Form::checkbox('do_not_show_paid_invoices', 1, true,
+                              [ 'class' => 'input-icheck', 'id' => 'do_not_show_paid_invoices']); !!} Do not show paid invoices
+                            </label>
+                        </div>
+                    </div>
+                </div> -->
+                <!--   <div class="col-md-3">
+                    <div class="form-group">
+                        {!! Form::label('type', __( 'lang_v1.type' ) . ':') !!}
+                        {!! Form::select('contact_type', $types, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'contact_type']); !!}
+                    </div>
+                </div> -->
+            @endcomponent
+        </div>
+    </div>
+    <div class="row">
+        <center>
+            <button onclick="ExportToExcel('xlsx')" class="btn btn-primary" style="margin-bottom: 10px;"><i class="fa fa-download"></i> Export Excel File</button>
+            <button  style="margin-bottom: 10px;" type="button" class="btn btn-primary no-print" id="print_invoice"
+                 aria-label="Print"><i class="fas fa-print"></i> @lang( 'messages.print')
+            </button>
+            {!! Form::hidden('selected_row_new', null, ['id' => 'selected_row_new']); !!}
+            {!! Form::submit(__('Send Bulk SMS'), array('class' => 'btn btn-md btn-primary  no-print', 'style'=>'margin-bottom: 10px;', 'id' => 'send-bulk-sms')) !!}
+            {!! Form::close() !!}
+
+            {!! Form::hidden('selected_row_for_email', null, ['id' => 'selected_row_for_email']); !!}
+            {!! Form::submit(__('Send Bulk Email'), array('class' => 'btn btn-md btn-primary  no-print', 'style'=>'margin-bottom: 10px;', 'id' => 'send-email')) !!}
+            {!! Form::close() !!}
+
+        </center>
+        <div class="col-md-12">
+
+            <table class="table table-bordered table-striped"
+                            id="tbl_exporttable_to_xls">
+                                <thead>
+                                    <tr>
+                                    <td colspan="7" style="border: 1px solid #000 !important; text-align: center; font-family: calibri">
+                                        <span class="pull-left"><input type="checkbox" id="select-all-row" class="no-print"></span><span style="color: #000 !important;font-weight: bold; font-size: 16px;"></span></td></tr>
+
+                                    <tr style=""><td colspan="7" style="border: 1px solid #000 !important; background: #e4e4e4 !important; font-size: 16px; text-align: center; font-family: calibri">
+                                        <span style="color: #000 !important;font-weight: bold; font-size: 16px;">
+                                            <div id="myDiv"></div>
+                                        </span></td></tr>
+                                </thead>
+                                @if (!$newbalance->isEmpty())
+                                <?php  $finalcount=0;?>
+                                    @foreach($newbalance as $query => $qr)
+                                    <?php  $count = 0;?>
+                                <tbody>
+                                    <tr>
+                                         <td colspan="7" style="width: 17.65%; background-color: #808080 !important; border: 1px solid #000 !important; border: 1px solid #000 !important"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="width: 3%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;" class="no-print"></td>
+                                        <td style="width: 17.65%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Date</span></td>
+                                        <td style="width: 7%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Invoice</span></td>
+                                        <td style="width: 30%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Name</span></td>
+                                        <td style="width: 12%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Mobile</span></td>
+                                        <td style="width: 30%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Notes</span></td>
+                                        <td style="width: 12.50%; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important;">Open Balance</span></td>
+                                    </tr>
+                                     @foreach($qr as $con => $qrrr)
+                                     <tr>
+                                        <td style="width: 3%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;" class="no-print"><span style="color: #000 !important"><input type="checkbox"  class="row-select" value="{{$qrrr->transaction_id }}" data-email = "{{ $qrrr->email }}" data-mobile = "{{ $qrrr->mobile }}"></td>
+                                        <td style="width: 17.65%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">{{date('m-d-Y', strtotime($qrrr->transaction_date))}}</span></td>
+                                        <td style="width: 7%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">{{$qrrr->invoice_no}}</span></td>
+                                        <td style="width: 30%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">{{$qrrr->customer}}</span></td>
+                                        <td style="width: 12%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">{{$qrrr->mobile}}</span></td>
+                                        <td style="width: 30%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">{{$qrrr->additional_notes}}</span></td>
+                                        <td style="width: 12.50%;font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"><span style="color: #000 !important">${{ number_format((float) $qrrr->final_total , 2, '.', '') }}</span></td>
+                                    </tr>
+                                    <?php $count +=$qrrr->final_total - $qrrr->total_paid; ?>
+                                    @endforeach
+                                   <tr>
+                                       <?php
+                                            $credit = getCreditBalance($qrrr->id);
+                                            $credit = number_format((float) $credit , 2, '.', '');
+                                            $count = number_format((float) $count , 2, '.', '');
+                                            $finalcount += $count;
+                                            $open_bal = $count - $credit;
+                                        ?>
+                                    <td colspan="6" style=" text-align: center; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"> <span style="color: #000;font-weight: bold; font-size: 12px;">{{$qrrr->customer}} - (Credit: ${{$credit}}, ${{$count}} - ${{$credit}} = ${{$open_bal}} Open Balance)</span></td>
+                                    <td  style=" text-align: center; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"> <span style="color: #000;font-weight: bold; font-size: 12px;">$ {{$count}}</span></td>
+                                   </tr>
+                                </tbody>
+                                 @endforeach
+                                    <tr><td colspan="6" style=" text-align: center; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"> <span style="color: #000 !important;font-weight: bold; font-size: 16px;">TOTAL</span></td>
+                                        <td style=" text-align: center; font-family: calibri; font-size: 11px; border: 1px solid #000 !important;"> <span style="color: #000 ;font-weight: bold; font-size: 16px;">$ {{$finalcount}}</span></td>
+                                    </tr>
+                                 @else
+                                 <tr>
+                                     <td colspan="6" style="border: 1px; text-align: center; font-family: calibri">
+                                        <span style="color: #000 !important;font-weight: bold; font-size: 16px;">NO Record Found</span></td>
+                                 </tr>
+                                @endif
+                            </table>
+        </div>
+ </div>
+</section>
+<!-- /.content -->
+@endsection
+@section('javascript')
+<script type="text/javascript" src="https://unpkg.com/xlsx@0.15.1/dist/xlsx.full.min.js"></script>
+
+<script type="text/javascript">
+
+$(function() {
+
+
+    // if({{$from}}!=''){
+        var fromDate = '{{$from}}';
+        var toDate = '{{$to}}';
+
+    // } else{
+    //     var fromDate = moment().subtract(29, 'days');
+    //     var toDate = moment();
+    // }
+
+    function cb(fromDate, toDate) {
+        $('#reportrange span').html(fromDate.format('YYYY-MM-DD') + ' - ' + toDate.format('YYYY-MM-DD'));
+    }
+
+    $('#reportrange').daterangepicker({
+        startDate: fromDate,
+        endDate: toDate,
+        ranges: {
+           'Today': [moment(), moment()],
+           'Start To One Month Back' :[moment('2021-05-31'), moment().subtract(1, 'month')],
+           'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+           'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+           'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+           'This Month': [moment().startOf('month'), moment().endOf('month')],
+           'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+           'This Year': [moment().startOf('year'), moment().endOf('year')],
+        }
+    }, cb);
+
+    cb(fromDate, toDate);
+     $(document).on("click", "#select-all-row", function(){
+           var test= $(".row-select").attr('checked', this.checked);
+
+        });
+
+        $(document).on('click', '#send-bulk-sms', function (e) {
+            e.preventDefault();
+            var selected_rows = []; var selected_email = []; var selected_mobile = [];  var i=0;
+
+            $('.row-select:checked').each(function () {
+                selected_rows[i] = $(this).val();
+                selected_mobile[i] = $(this).attr("data-mobile");
+                i++;
+            });
+
+            if (selected_rows.length > 0) {
+
+                $('input#selected_row_new').val(selected_rows);
+
+                  swal({
+                    title: LANG.sure,
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true,
+                }).then((confirmed) => {
+                    if (confirmed) {
+                           $.ajax({
+                            method: 'post',
+                            url: "/notification/get-bulk-notification",
+                	        data:{
+                	            selected_rows:selected_rows,
+                	            mobile_number : selected_mobile,
+                	            notification_type: 'sms_only',
+                	            template_for: 'payment_reminder',
+                	        },
+
+                             success: function(result) {
+                                if (result) {
+                                    if(result.success == true){
+                                          toastr.success(result.msg);
+                                    } else {
+                                      toastr.error(result.msg);
+                                    }
+                                }
+                            },
+                        });
+                    }
+                });
+            } else {
+                $('input#selected_row_new').val('');
+                swal('@lang("lang_v1.no_row_selected")');
+            }
+
+        });
+
+        $(document).on('click', '#send-email', function (e) {
+            e.preventDefault();
+            var selected_rows = []; var selected_emails = []; var i=0;
+
+            $('.row-select:checked').each(function () {
+                selected_rows[i] = $(this).val();
+                selected_emails[i] = $(this).attr("data-email");
+                i++;
+            });
+
+            if (selected_rows.length > 0) {
+
+                $('input#selected_row_for_email').val(selected_rows);
+
+                  swal({
+                    title: LANG.sure,
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true,
+                }).then((confirmed) => {
+                    if (confirmed) {
+                           $.ajax({
+                            method: 'post',
+                            url: "/notification/get-bulk-email-notification",
+                	        data:{
+                	            selected_rows:selected_rows,
+                	            to_email:selected_emails,
+                	            notification_type: 'email_only',
+                	            template_for: 'payment_reminder',
+                	        },
+
+                             success: function(result) {
+                 	            if (result) {
+                                    // console.log(selected_rows.length);
+                                    if(result.success == true){
+                                          toastr.success(result.msg);
+                                    } else {
+                                      toastr.error(result.msg);
+                                    }
+                                }
+                            },
+                        });
+                    }
+                });
+            } else {
+                $('input#selected_row_for_email').val('');
+                swal('@lang("lang_v1.no_row_selected")');
+            }
+
+        });
+});
+
+$(function() {
+    // $("#br_account_rep").change(function() {
+        document.title  =  'Opening Balance Report - ' + $('option:selected', this).text() + ' For ' + $("input[name=fromDate]").val();
+         var selected_destination =  'Opening Balance Report - ' + $('option:selected', this).text() + ' For ' + $("input[name=fromDate]").val();
+        document.getElementById("myDiv").innerHTML = selected_destination;
+    // });
+});
+
+//Export to Excel
+function ExportToExcel(type, fn, dl) {
+    var elt = document.getElementById('tbl_exporttable_to_xls');
+    var wb = XLSX.utils.table_to_book(elt, { sheet: "sheet1" });
+    return dl ?
+        XLSX.write(wb, { bookType: type, bookSST: true, type: 'base64' }) :
+        XLSX.writeFile(wb, fn || ('Balance Report.' + (type || 'xlsx')));
+}
+
+//for Printing page .
+$(document).ready(function(){
+    $(document).on('click', '#print_invoice', function(){
+        $('#tbl_exporttable_to_xls').printThis();
+    });
+});
+
+</script>
+    <script src="{{ asset('js/report.js?v=' . $asset_v) }}"></script>
+@endsection

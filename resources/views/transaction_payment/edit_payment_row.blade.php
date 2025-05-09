@@ -1,0 +1,204 @@
+<div class="modal-dialog" role="document">
+  <div class="modal-content">
+
+    {!! Form::open(['url' => action('TransactionPaymentController@update', [$payment_line->id]), 'method' => 'put', 'id' => 'transaction_payment_add_form', 'files' => true, 'onsubmit'=>'return checkError()' ]) !!}
+    {!! Form::hidden('default_payment_accounts', !empty($transaction->location) ? $transaction->location->default_payment_accounts : '[]', ['id' => 'default_payment_accounts']); !!}
+    @php 
+      $prev_url = url()->previous(); 
+      $segments = explode('/', str_replace(''.url('').'', '', $prev_url));
+    @endphp
+
+    @if(isset($segments[1]))
+    {!! Form::hidden('payment_location', $segments[1] ); !!}
+    @endif
+
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+      <h4 class="modal-title">@lang( 'purchase.edit_payment' )</h4>
+    </div>
+
+    <div class="modal-body">
+      <div class="row">
+        @if(!empty($transaction->contact))
+        <div class="col-md-4">
+          <div class="well">
+            <strong>@lang('purchase.supplier'): </strong>{{ $transaction->contact->name }}<br>
+            <strong>@lang('business.business'): </strong>{{ $transaction->contact->supplier_business_name }}
+          </div>
+        </div>
+        @endif
+        @if($transaction->type != 'opening_balance')
+        <div class="col-md-4">
+          <div class="well">
+            <strong>@lang('purchase.ref_no'): </strong>{{ $transaction->ref_no }}<br>
+            @if(!empty($transaction->location))
+              <strong>@lang('purchase.location'): </strong>{{ $transaction->location->name }}
+            @endif
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="well">
+            <strong>@lang('sale.total_amount'): </strong><span class="display_currency" data-currency_symbol="true">{{ $transaction->final_total }}</span><br>
+            <strong>@lang('purchase.payment_note'): </strong>
+            @if(!empty($transaction->additional_notes))
+            {{ $transaction->additional_notes }}
+            @else
+              --
+            @endif
+          </div>
+        </div>
+        @endif
+      </div>
+       @php		
+        $discount_amount_total = 0;		
+        if($payment_line->discount_type == 'fixed') 		
+          $discount_amount_total = $payment_line->discount_amount;		
+        elseif($payment_line->discount_type == 'percentage') 		
+          $discount_amount_total = ($payment_line->total_before_tax * $payment_line->discount_amount) /100;		
+      @endphp
+      <div class="row payment_row">
+        <div class="col-md-3">
+          <div class="form-group">
+            {!! Form::label("amount" , __('sale.amount') . ':*') !!}
+            <div class="input-group">
+              <span class="input-group-addon">
+                <i class="fas fa-money-bill-alt"></i>
+              </span>
+               <input type="hidden" name="bill_amt" id="bill_amt" value="{{$transaction->final_total + $discount_amount_total}}">	
+              {!! Form::text("amount", @num_format($payment_line->amount), ['class' => 'form-control input_number', 'required', 'placeholder' => 'Amount']); !!}
+            </div>
+            <span class="amt_warning" style="color:#ff5722"></span>
+            <span class="amt_err" style="color:#ff0000"></span>
+            <input type="hidden" id="error_count" value="0" />
+          </div>
+        </div>
+          <div class="col-md-3">	
+          <div class="form-group">	
+            {!! Form::label('discount_type', __('sale.discount_type') . ':' ) !!}	
+            <div class="input-group">	
+                <span class="input-group-addon">	
+                    <i class="fa fa-info"></i>	
+                </span>	
+            <!--     <select name="discount_type" id="discount_type" class="form-control">	
+                  <option value="">Please Select</option>	
+                  <option value="fixed">Fixed</option>	
+                  <option value="percentage">Percentage</option>	
+                </select> -->	
+                 {!! Form::select('discount_type', ['fixed' => __('lang_v1.fixed'), 'percentage' => __('lang_v1.percentage')], ($payment_line->discount_type)? $payment_line->discount_type : 'fixed' , ['class' => 'form-control','placeholder' => __('messages.please_select')]); !!} 	
+            </div>	
+          </div>	
+        </div>	
+        @php	
+            $max_discount = !is_null(auth()->user()->max_sales_discount_percent) ? auth()->user()->max_sales_discount_percent : '';	
+            //if sale discount is more than user max discount change it to max discount	
+            // $sales_discount = $business_details->default_sales_discount;	
+            // if($max_discount != '' && $sales_discount > $max_discount) $sales_discount = $max_discount;	
+          @endphp	
+        <div class="col-md-3">	
+          <div class="form-group">	
+            {!! Form::label('discount_amount', __('sale.discount_amount') . ':' ) !!}	
+            <div class="input-group">	
+                <span class="input-group-addon">	
+                    <i class="fa fa-info"></i>	
+                </span>	
+                {!! Form::text('discount_amount', $payment_line->discount_amount, ['class' => 'form-control input_number',  'data-max-discount' => $max_discount, 'data-max-discount-error_msg' => __('lang_v1.max_discount_error_msg', ['discount' => $max_discount != '' ? @num_format($max_discount) : '']) ]); !!}	
+                {{-- {!! Form::text('discount_amount', @num_format(), ['class' => 'form-control input_number', 'data-default' => $sales_discount, 'data-max-discount' => $max_discount, 'data-max-discount-error_msg' => __('lang_v1.max_discount_error_msg', ['discount' => $max_discount != '' ? @num_format($max_discount) : '']) ]); !!} --}}	
+            </div>	
+            <span style="color: red" class="error"></span>	
+          </div>	
+        </div>	
+        <div class="col-md-3">	
+          <b>@lang( 'sale.discount_amount' ):</b>(-) 	
+          <span class="display_currency" id="total_discount">0</span>	
+          <input type="hidden" value="" name="discount_total" id="discount_total" >	
+        </div>	
+      </div>	
+      <div class="row payment_row">
+        <div class="col-md-4">
+          <div class="form-group">
+            {!! Form::label("paid_on" , __('lang_v1.paid_on') . ':*') !!}
+            <div class="input-group">
+              <span class="input-group-addon">
+                <i class="fa fa-calendar"></i>
+              </span>
+              {!! Form::text('paid_on', @format_datetime($payment_line->paid_on), ['class' => 'form-control start-date-picker', 'required']); !!}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            {!! Form::label("method" , __('purchase.payment_method') . ':*') !!}
+            <div class="input-group">
+              <span class="input-group-addon">
+                <i class="fas fa-money-bill-alt"></i>
+              </span>
+              {!! Form::select("method", $payment_types, $payment_line->method, ['class' => 'form-control select2 payment_types_dropdown', 'required', 'style' => 'width:100%;']); !!}
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group">
+            {!! Form::label('document', __('purchase.attach_document') . ':') !!}
+            {!! Form::file('document', ['accept' => implode(',', array_keys(config('constants.document_upload_mimes_types')))]); !!}
+            <p class="help-block">@lang('lang_v1.previous_file_will_be_replaced')
+            @includeIf('components.document_help_text')</p>
+          </div>
+        </div>
+        @if(!empty($accounts))
+          <div class="col-md-6">
+            <div class="form-group">
+              {!! Form::label("account_id" , __('lang_v1.payment_account') . ':') !!}
+              <div class="input-group">
+                <span class="input-group-addon">
+                  <i class="fas fa-money-bill-alt"></i>
+                </span>
+                {!! Form::select("account_id", $accounts, !empty($payment_line->account_id) ? $payment_line->account_id : '' , ['class' => 'form-control select2', 'id' => "account_id", 'style' => 'width:100%;']); !!}
+              </div>
+            </div>
+          </div>
+        @endif
+        
+        <div class="clearfix"></div>
+        @include('transaction_payment.payment_type_details')
+        <div class="col-md-12" id="cash_note">
+            <div class="form-group">
+                <label>Cash Amount:</label>
+                <input type="text" class="form-control" name="cash_note" value="{{ $payment_line->cash_note ?? '' }}">
+            </div>
+        </div>
+        <div class="col-md-12">
+          <div class="form-group">
+            {!! Form::label("note", __('lang_v1.payment_note') . ':') !!}
+            {!! Form::textarea("note", $payment_line->note, ['class' => 'form-control', 'rows' => 3]); !!}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="submit" class="btn btn-primary">@lang( 'messages.update' )</button>
+      <button type="button" class="btn btn-default" data-dismiss="modal">@lang( 'messages.close' )</button>
+    </div>
+
+    {!! Form::close() !!}
+
+  </div><!-- /.modal-content -->
+</div><!-- /.modal-dialog -->
+
+<script type="text/javascript">
+   $('.start-date-picker').datepicker({
+        autoclose: true,
+        endDate: 'today',
+    });
+    $(document).on('change', '.payment_types_dropdown', function() {
+        $('#cash_note').hide();
+        var payment_type = $("#method").val();
+        if(payment_type == 'cash'){
+            $('#cash_note').show();
+        }
+        else{
+            $('#cash_note').hide();
+        }
+    });
+</script>
+

@@ -1,0 +1,395 @@
+ @extends('layouts.app')
+@section('title', __('home.home'))
+
+@section('css')
+
+    <style>
+        .search_result {
+            display: none;
+        }
+
+        .dash_info_ele {
+            width: 35%;
+            padding: 1rem;
+            margin: 1rem;
+            background: white;
+            display: flex;
+        }
+
+        .dash_icon {
+            margin: auto 5px auto auto;
+            border-radius: 50px;
+            display: flex;
+        }
+
+        .dash_svg_icon {
+            height: 28px;
+            margin: 15px;
+        }
+
+        .dash_ele_color1 {
+            color: #00bcd4 !important;
+            background: rgba(0, 188, 212, .1) !important;
+        }
+
+        .dash_ele_color2 {
+            color: #2196f3 !important;
+            background: rgba(33, 150, 243, .1) !important;
+        }
+
+        .dash_ele_color3 {
+            color: #4caf50 !important;
+            background: rgba(76, 175, 80, .1) !important;
+        }
+
+        .dash_ele_color4 {
+            color: #f44336 !important;
+            background: rgba(244, 67, 54, .1) !important;
+        }
+        .dash_ele_color5 {
+            color: #aa80ee !important;
+            background: rgba(111, 75, 243, 0.1) !important;
+        }
+    </style>
+
+@endsection
+@section('content')
+    <!-- Content Header (Page header) -->
+    <div style="background:white;padding:15px;">
+        <h1>Welcome {{ Session::get('user.first_name') }},</h1>
+        @if (auth()->user()->can('dashboard.data'))
+            <div class="row">
+                <div class="col-md-12 col-xs-12 pull-right">
+                    @if (count($all_locations) > 1)
+                        {!! Form::select('dashboard_location', $all_locations, null, [
+                            'class' => 'form-control select2',
+                            'placeholder' => __('lang_v1.select_location'),
+                            'id' => 'dashboard_location',
+                        ]) !!}
+                    @endif
+                </div>
+                <!-- <div class="col-md-8 col-xs-12">-->
+                <!--    <div class="btn-group pull-right" data-toggle="buttons">-->
+                <!--        <label class="btn btn-info active">-->
+                <!--            <input type="radio" name="date-filter" data-start="{{ date('Y-m-d') }}"-->
+                <!--                data-end="{{ date('Y-m-d') }}" checked> {{ __('home.today') }}-->
+                <!--        </label>-->
+                <!--        <label class="btn btn-info">-->
+                <!--            <input type="radio" name="date-filter"-->
+                <!--                data-start="{{ $date_filters['this_week']['start'] }}"-->
+                <!--                data-end="{{ $date_filters['this_week']['end'] }}"> {{ __('home.this_week') }}-->
+                <!--        </label>-->
+                <!--        <label class="btn btn-info">-->
+                <!--            <input type="radio" name="date-filter"-->
+                <!--                data-start="{{ $date_filters['this_month']['start'] }}"-->
+                <!--                data-end="{{ $date_filters['this_month']['end'] }}"> {{ __('home.this_month') }}-->
+                <!--        </label>-->
+                <!--        <label class="btn btn-info">-->
+                <!--            <input type="radio" name="date-filter" data-start="{{ $date_filters['this_fy']['start'] }}"-->
+                <!--                data-end="{{ $date_filters['this_fy']['end'] }}"> {{ __('home.this_fy') }}-->
+                <!--        </label>-->
+                <!--    </div>-->
+                <!--</div> -->
+
+                <div class="form-group pull-right">
+                <div class="col-md-8">
+                    <input type="hidden" id="date" name="date" value="">
+                    <div class="form-group">
+                        {!! Form::label('all_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('all_date_filter', @format_date('first day of this week') . ' ~ ' . @format_date('last day of this week'), ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'id' => 'all_date_filter', 'readonly']); !!}
+
+                        {{-- {!! Form::label('all_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('all_date_filter', null, ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'readonly']); !!} --}}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group" style="margin-top: 25px;">
+                        <button class="btn btn-primary" id="submitData" >Submit</button>
+                    </div>
+                </div>
+            </div>
+            
+            </div>
+    </div>
+    <br />
+    <div style="display:flex;margin:1em;">
+        <div class="dash_info_ele dash_ele_color2" style="">
+            <div>
+                <h4>Total Orders</h4>
+                <h4 class="total_order"></h4>
+
+            </div>
+            <div class="dash_icon dash_ele_color2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="dash_svg_icon" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </div>
+        </div>
+        <div class="dash_info_ele col-md-4 dash_ele_color4">
+            <div>
+                <h4>Total Sales</h4>
+                <h4 class="total_sell"></h4>
+            </div>
+            <div class="dash_icon dash_ele_color4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="dash_svg_icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                        d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd" />
+                </svg>
+            </div>
+        </div>
+        <div class="dash_info_ele col-md-4 dash_ele_color3">
+            <div>
+                <h4>Gross Profit Margin</h4>
+                <h4 class="gross_profit"></h4>
+
+            </div>
+            <div class="dash_icon dash_ele_color3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="dash_svg_icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" />
+                    <path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" />
+                </svg>
+            </div>
+        </div>
+        <!-- <div class="dash_info_ele">-->
+        <!--    <div>-->
+        <!--        <h4>Net Profit Margin</h4>-->
+        <!--        <h3>20%</h3>-->
+        <!--    </div>-->
+        <!--    <div class="dash_icon dash_ele_color3">-->
+        <!--        <svg xmlns="http://www.w3.org/2000/svg" class="dash_svg_icon" fill="none" viewBox="0 0 24 24"-->
+        <!--            stroke="currentColor" stroke-width="2">-->
+        <!--            <path stroke-linecap="round" stroke-linejoin="round"-->
+        <!--                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />-->
+        <!--        </svg>-->
+        <!--    </div>-->
+        <!--</div> -->
+    </div>
+    @endif
+    <div style="display:flex;margin:1em;">
+        <div style="height:400px;width:100%;margin:1em;background:white;max-height: 400px;">
+            <h2 style="margin: 1rem;">Total Sales</h2>
+            <div id="chart3"></div>
+        </div>
+    </div>
+
+    <div style="display:flex;margin:1em;">
+        <div style="width:40%;margin:1em;background:white;min-height: 530px; max-height: 530px;">
+            <h2 style="margin: 1rem;">Top Customers</h2>
+            <div style="margin:35px 0;">
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a1"></b></span><br />
+                        <span class="a2" data-currency_symbol=true></span>
+                    </div>
+                </div>
+
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a3"></b></span><br />
+                        <span class="a4" data-currency_symbol=true></span>
+                        {{-- {{ $query[1]['high_purchase'] }} --}}
+                    </div>
+                </div>
+
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a5"></b></span><br />
+                        <span class="a6" data-currency_symbol=true></span>
+                    </div>
+                </div>
+
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a7"></b></span><br />
+                        <span class="a8" data-currency_symbol=true></span>
+                    </div>
+                </div>
+
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a9"></b></span><br />
+                        <span class="a10" data-currency_symbol=true></span>
+                    </div>
+                </div>
+
+                <div style="display:flex;margin:15px 1rem;">
+                    <div style="display:flex;align-items:center;margin: 0 10px;">
+                        <div class="dash_ele_color1" style="width:30px;height:30px;display:flex;">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="" style="margin:auto;height:18px;"
+                                viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                    </div>
+                    <div>
+                        <span><b class="a11"></b></span><br />
+                        <span class="a12" data-currency_symbol=true></span>
+                    </div>
+                </div>
+
+            </div>
+            <hr style="width:100%;opacity:0.3;" />
+            <h2 style="margin: 1rem;">Total Customers: <span class="allcustomer"></span></span></h2>
+        </div>
+
+        <div style="width:60%;margin:1rem;">
+            <div style="display:flex;">
+                <div class="dash_ele_color3"
+                    style="height:200px;width:200px;margin:1em;background:white;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:24px;">
+                        {{-- <i class="fa fa-user"></i> --}}
+                        <h2 style=" color: #00bcd4;" class="total_staff"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem; color: #00bcd4;" class="text-center">Total Staff</h4>
+                </div>
+
+               <div class="dash_ele_color1"
+                    style="height:200px;width:200px;margin:1em;background:white;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:24px;">
+                        <h2 style="color: #00bcd4;" class="quantity"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 0.5rem; color: #00bcd4" class="text-center">Total Inventory Stock</h4>
+                </div>
+
+                <div class="dash_ele_color5"
+                    style="height:200px;width:200px;margin:1em;background:white;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:24px;">
+                        <h2 style="color:#aa80ee;" class="inventory_value"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="color:#aa80ee; margin: 0rem;" class="text-center">Total Inventory Value<span
+                            class="text-sm">(With Selling price)</span></h4>
+                </div>
+            </div>
+            <div style="display:flex;">
+
+                 <div class="dash_ele_color3"
+                    style="height:200px;width:200px;margin:1em;background:white;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:auto;">
+                        <h2 style="color: #4caf50;" class="allproducts"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem;color: #4caf50;" class="text-center">Total Items</h4>
+                </div>
+                
+                <div class="dash_ele_color2"
+                    style="height:200px;width:200px;margin:1em;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:auto;">
+                        <h2 style="color: #2196f3" class="invoice_due"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem;color: #2196f3" class="text-center">Total Invoice Due</h4>
+                </div>
+
+                <div class="dash_ele_color4"
+                    style="height:200px;width:200px;margin:1em;background:white;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:auto;">
+                        {{-- <h1 class="text-primary">555</h1> --}}
+                        <h2 style=" color: #f44336;" class="total_expense"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem; color: #f44336;" class="text-center">Total Expense</h4>
+                </div>
+            </div>
+            <div style="display:flex;">
+
+                <div class="dash_ele_color2"
+                    style="height:200px;width:200px;margin:1em;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:27px;">
+                        <h2 style="color: #2196f3" class="total_discount"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem;color: #2196f3" class="text-center">Total Discount(sell)</h4>
+                </div>
+
+                <div class="dash_ele_color1"
+                    style="height:200px;width:200px;margin:1em;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:auto;">
+                        <h2 style="color: #00bcd4;" class="total_purchase"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="margin: 1rem; color: #00bcd4" class="text-center">Purchases</h4>
+                </div>
+
+                <div class="dash_ele_color5"
+                    style="height:200px;width:200px;margin:1em;display:flex;flex-direction:column;">
+                    <div style="display:flex;justify-content:center;align-items:center;margin:auto;">
+                        <h2 style="color:#aa80ee;" class="purchase_due"></h2>
+                    </div>
+                    <hr style="width:100%;opacity:0.3;" />
+                    <h4 style="color:#aa80ee; margin: 1rem;" class="text-center">Purchase Due</span></h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:flex;margin:1em;">
+        <div style="height:400px;width:100%;margin:1em;background:white;">
+            <h2 style="margin: 1rem;">Purchase and Purchase Due</h2>
+            <div id="chart2"></div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+
+    <!-- /.content -->
+@stop
+@section('javascript')
+  <script src="{{ asset('js/NewHome.js?v=' . $asset_v) }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script type="text/javascript">
+    
+
+     </script>   
+@endsection

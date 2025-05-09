@@ -1,0 +1,901 @@
+@extends('layouts.app')
+@section('title', __('sale.products'))
+
+@section('content')
+
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+        <h1>@lang('sale.products')
+            <small>@lang('lang_v1.manage_products')</small>
+        </h1>
+        <!-- <ol class="breadcrumb">
+            <li><a href="#"><i class="fa fa-dashboard"></i> Level</a></li>
+            <li class="active">Here</li>
+        </ol> -->
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+        <div class="row">
+            <div class="col-md-12">
+                @component('components.filters', ['title' => __('report.filters')])
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            {!! Form::label('type', __('product.product_type') . ':') !!}
+                            {!! Form::select('type', ['single' => __('lang_v1.single'), 'variable' => __('lang_v1.variable')], null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'product_list_filter_type', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            {!! Form::label('category_id', __('product.category') . ':') !!}
+                            {!! Form::select('category_id', $categoriesdata, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'product_list_filter_category_id', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            {!! Form::label('unit_id', __('product.unit') . ':') !!}
+                            {!! Form::select('unit_id', $units, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'product_list_filter_unit_id', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+                    {{--<div class="col-md-3">
+                        <div class="form-group">
+                            {!! Form::label('tax_id', __('product.tax') . ':') !!}
+                            {!! Form::select('tax_id', $taxes, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'product_list_filter_tax_id', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>--}}
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            {!! Form::label('brand_id', __('product.brand') . ':') !!}
+                            {!! Form::select('brand_id', $brands, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'product_list_filter_brand_id', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+                    <div class="col-md-3" id="location_filter">
+                        <div class="form-group">
+                            {!! Form::label('location_id',  __('purchase.business_location') . ':') !!}
+                            {!! Form::select('location_id', $business_locations, null, ['class' => 'form-control select2', 'style' => 'width:100%', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+                    <div class="col-md-3" style="display:none">
+                        <br>
+                        <div class="form-group">
+                            {!! Form::select('active_state', ['active' => __('business.is_active'), 'inactive' => __('lang_v1.inactive')], null, ['class' => 'form-control select2', 'style' => 'width:100%', 'id' => 'active_state', 'placeholder' => __('lang_v1.all')]); !!}
+                        </div>
+                    </div>
+
+                    <!-- include module filter -->
+                    @if(!empty($pos_module_data))
+                        @foreach($pos_module_data as $key => $value)
+                            @if(!empty($value['view_path']))
+                                @includeIf($value['view_path'], ['view_data' => $value['view_data']])
+                            @endif
+                        @endforeach
+                    @endif
+
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <br>
+                            <label>
+                                {!! Form::checkbox('not_for_selling', 1, false, ['class' => 'input-icheck', 'id' => 'not_for_selling']); !!}
+                                <strong>Inactive Product</strong>
+                            </label>
+                        </div>
+                    </div>
+                    @if($is_woocommerce)
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <br>
+                                <label>
+                                    {!! Form::checkbox('woocommerce_enabled', 1, false,
+                                    [ 'class' => 'input-icheck', 'id' => 'woocommerce_enabled']); !!} {{ __('lang_v1.woocommerce_enabled') }}
+                                </label>
+                            </div>
+                        </div>
+                    @endif
+                @endcomponent
+            </div>
+        </div>
+        @can('product.view')
+            <div class="row">
+                <div class="col-md-12">
+                    <!-- Custom Tabs -->
+                    <div class="nav-tabs-custom">
+                        <ul class="nav nav-tabs">
+                            <li class="active">
+                                <a href="#product_list_tab" data-toggle="tab" aria-expanded="true"><i
+                                            class="fa fa-cubes" aria-hidden="true"></i> @lang('lang_v1.all_products')
+                                </a>
+                            </li>
+
+                            <li>
+                                <a href="#product_stock_report" data-toggle="tab" aria-expanded="true"><i
+                                            class="fa fa-hourglass-half"
+                                            aria-hidden="true"></i> @lang('report.stock_report')</a>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
+                            <div class="tab-pane active" id="product_list_tab">
+                                @can('product.create')
+                                    <a class="btn btn-primary pull-right" href="{{action('ProductController@create')}}">
+                                        <i class="fa fa-plus"></i> @lang('messages.add')</a>
+                                    <br><br>
+                                @endcan
+                                @include('product.partials.product_list')
+                            </div>
+
+                            <div class="tab-pane" id="product_stock_report">
+                                @include('report.partials.stock_report_table')
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endcan
+        <input type="hidden" id="is_rack_enabled" value="{{$rack_enabled}}">
+
+        <div class="modal fade product_modal" tabindex="-1" role="dialog" data-backdrop="static"
+             aria-labelledby="gridSystemModalLabel">
+        </div>
+
+        <div class="modal fade" id="view_product_modal" tabindex="-1" role="dialog" data-backdrop="static"
+             aria-labelledby="gridSystemModalLabel">
+        </div>
+
+        <div class="modal fade" id="opening_stock_modal" tabindex="-1" role="dialog" data-backdrop="static"
+             aria-labelledby="gridSystemModalLabel">
+        </div>
+
+        @include('product.partials.edit_product_location_modal')
+
+    </section>
+    <!-- /.content -->
+
+    <div class="modal fade" id="bulkeditmodal" tabindex="-1" role="dialog"  aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                {!! Form::open(['url' => action('ProductController@editbulk'), 'method' => 'post', 'id' => 'edit_bulk_form' ]) !!}
+                <input type="hidden" name="product_id" id="product_id" value="">
+                    <div class="modal-header">
+                        <h4 class="modal-title d-inline-block" style="display:inline-block;">Multiple Item Update</h4>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4><span class="add_to_location_title hide">@lang( 'lang_v1.add_location_to_the_selected_products' )</span><span class="remove_from_location_title hide">@lang( 'lang_v1.remove_location_from_the_selected_products' )</span></h4>
+                    </div>
+                    {{--  <div class="modal-header">
+                        <h5 style="text-align:left">Multiple Item Update</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title"><span class="add_to_location_title hide">@lang( 'lang_v1.add_location_to_the_selected_products' )</span><span class="remove_from_location_title hide">@lang( 'lang_v1.remove_location_from_the_selected_products' )</span></h4>
+                    </div>  --}}
+                    <div class="modal-body">
+                        <div>
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.inc_of_tax')</small></span>
+                                            {!! Form::text('single_dpp_inc_tax', null, ['class' => 'form-control input-sm dpp_inc_tax input_number', 'id' => 'cost_price', 'placeholder' => __('product.inc_of_tax'), 'required']); !!}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.exc_of_tax')</small></span>
+                                            {!! Form::text('single_dsp', null, ['class' => 'form-control input-sm dsp input_number', 'placeholder' => __('product.exc_of_tax'), 'id' => 'sell_price', 'required']); !!}
+                                            <span class="error"></span>
+                                        </div>
+                                        
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.profit_percent')</small></span>
+                                            {!! Form::text('profit_percent',null, ['class' => 'form-control input-sm input_number', 'id' => 'gross_profit', 'required']); !!}
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                           
+                                            <div class="form-group">
+                                                    <br>
+                                                    <label class="container-1">  
+                                                        {!! Form::checkbox('woocommerce_disable_sync', 1,'',['class' => 'checkbox','id' => 'woocommerce_disable_sync']); !!} <span class="checkmark"></span> <strong>Do not sync with website</strong>
+                                                    </label>
+                                                    @show_tooltip(__('woocommerce::lang.woocommerce_disable_sync_help'))
+                                                  </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                    <br>
+                                                    <label>
+                                                        {!! Form::checkbox('outofstock', 1, null, ['class' => 'input-icheck', 'id' => 'outofstock']); !!} <strong>Mark as out of stock for website</strong>
+                                                    </label>
+                                                   
+                                                  </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                                <br>
+                                            <label class="container-1">
+                                                <input type="checkbox" name="notforselling" id="notforselling" style="background-color:white;" class="checkbox" value="1" onclick="synccheck()" > <span class="checkmark"></span> <strong>@lang('lang_v1.not_for_selling')</strong>
+                                                {{--  {!! Form::checkbox('notforselling', 1,'', ['class' => 'input-icheck notforselling','id' => 'notforselling']); !!} <strong>@lang('lang_v1.not_for_selling')</strong>  --}}
+                                            </label> @show_tooltip(__('lang_v1.tooltip_not_for_selling'))
+                                            {{--  <input type="checkbox" id="chkPassport" onclick="chekbox()" />  --}}
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <br>
+                                            <label>
+                                                {!! Form::checkbox('sync_with_woocommerce', 0,'', ['class' => 'input-icheck','id' => 'sync_with_woocommerce']); !!} <strong>@lang('Sync with website')</strong>
+                                            </label>  @show_tooltip(__('If checked this product will sync with woocommerce'))
+                                        </div>
+                                         <div class="col-md-4">
+                                            <br>
+                                            <label>
+                                                {!! Form::checkbox('instock', 0,'', ['class' => 'input-icheck','id' => 'instock']); !!}   <strong>@lang('In Stock')</strong>
+                                            </label>
+                                        </div>
+                                        <div class="col-md-4">
+                                                <br>
+                                            <label>
+                                                {!! Form::checkbox('forselling', 0,'', ['class' => 'input-icheck','id' => 'forselling']); !!} <strong>@lang('For selling')</strong>
+                                                
+                                            </label> 
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.category')</small></span>
+                                            <select name="category_id" id="category_id" class="form-control select2 input-sm category_id" style="width: 100%;">
+                                                <option value="0">Please Select</option>
+                                                @foreach($categories as $cat)
+                                                    <option value="{{$cat->id}}">{{$cat->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            {{-- {!! Form::select('category_id', $categories, !empty($duplicate_product->category_id) ? $duplicate_product->category_id : null, ['placeholder' => __('messages.please_select'), 'class' => 'form-control select2 input-sm category_id', 'style' => 'width: 100%;','id'=> 'category_id']); !!}  --}}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.sub_category')</small></span>
+                                            <select name="sub_category_id" id="sub_category_id" class="form-control select2 input-sm sub_category_id" style="width: 100%;">
+                                                <option value="0">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <span class="input-group-addon"><small>@lang('product.brand')</small></span>
+                                            <select name="brand_id" id="brand_id" class="form-control select2 input-sm category_id" style="width: 100%;">
+                                                <option value="0">Please Select</option>
+                                                @foreach($brand_data as $brand)
+                                                    <option value="{{$brand->id}}">{{$brand->name}}</option>
+                                                @endforeach
+                                            </select>
+                                            {{-- {!! Form::select('brand_id', $brands, !empty($duplicate_product->brand_id) ? $duplicate_product->brand_id    : null, ['placeholder' => __('messages.please_select'), 'class' => 'form-control select2 input-sm category_id', 'style' => 'width: 100%;','id'=> 'brand_id']); !!} --}}
+                                        </div>
+                                    </div> 
+                                        
+                                </div>	
+                            </div>
+    
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                            <button type="button" class="btn btn-primary submit" id="editbulkupdate">@lang( 'messages.save' )</button>
+                            <button type="button" class="btn btn-default" data-dismiss="modal">@lang( 'messages.close' )</button>
+                    </div>
+                {!! Form::close() !!}
+            </div>
+        </div>
+    </div>
+
+
+@endsection
+
+@section('javascript')
+    <script src="{{ asset('js/product.js?v=' . $asset_v) }}"></script>
+    <script src="{{ asset('js/opening_stock.js?v=' . $asset_v) }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            product_table = $('#product_table').DataTable({
+                  buttons:[	
+                    {	
+                        extend: 'csv',	
+                        footer: true,	
+                        text: '<span><i class="fa fa-file-csv" aria-hidden="true"></i> Export to CSV</span>',	
+                    },	
+                    {	
+                        extend: 'excel',	
+                        text: '<span><i class="fa fa-file-excel" aria-hidden="true"></i> Export to Excel</span>',	
+                        footer: true,	
+                        exportOptions: {	
+                            columns: [2,3,4,6,7,8,9,10,11,12,13,14]	
+                            	
+                        }	
+                    },	
+                    {	
+                        extend: 'print',	
+                        footer: true,	
+                        text: '<span><i class="fa fa-print" aria-hidden="true"></i> Print</span>',	
+                        exportOptions: {	
+                             columns: [2,3,4,6,7,8,9,10,11,12,13,14]	
+                         }	
+                    },	
+                    {	
+                        extend: 'colvis',	
+                        text: '<span><i class="fa fa-columns" aria-hidden="true"></i> Column visibility</span>',	
+                    },	
+                    {	
+                        extend: 'pdf',	
+                        footer: true,	
+                        text: '<span><i class="fa fa-file-pdf" aria-hidden="true"></i> Export to PDF</span>',	
+                    },	
+                ],
+                processing: true,
+                serverSide: true,
+                aaSorting: [[4, 'asc']],
+                scrollY: "500px",
+                scrollX: true,
+                scrollCollapse: true,
+                stateSave: true,
+                "ajax": {
+                    "url": "/products",
+                    "data": function (d) {
+                        d.type = $('#product_list_filter_type').val();
+                        d.category_id = $('#product_list_filter_category_id').val();
+                        d.brand_id = $('#product_list_filter_brand_id').val();
+                        d.unit_id = $('#product_list_filter_unit_id').val();
+                        d.tax_id = $('#product_list_filter_tax_id').val();
+                        d.active_state = $('#active_state').val();
+                        d.not_for_selling = $('#not_for_selling').is(':checked');
+                        d.location_id = $('#location_id').val();
+                        if ($('#repair_model_id').length == 1) {
+                            d.repair_model_id = $('#repair_model_id').val();
+                        }
+
+                        if ($('#woocommerce_enabled').length == 1 && $('#woocommerce_enabled').is(':checked')) {
+                            d.woocommerce_enabled = 1;
+                        }
+
+                        d = __datatable_ajax_callback(d);
+                    }
+                },
+                columnDefs: [{
+                    "targets": [0, 1, 2],
+                    "orderable": false,
+                    "searchable": false
+                },  
+                {
+                    "targets": [ 14 ],
+                    "visible": false,
+                    "searchable": false
+                },],
+                columns: [
+                    {data: 'mass_delete'},
+                    {data: 'action', name: 'action'},
+                    {data: 'image', name: 'products.main_image'},
+                    {data: 'item_code', name: 'products.item_code'},
+                    {data: 'product', name: 'products.name'},
+                    {data: 'notforselling', name: 'notforselling', searchable: false},
+                    {data: 'sku', name: 'products.sku'},
+                    @can('view_purchase_price')
+                    {
+                        data: 'purchase_price', name: 'max_purchase_price', searchable: false
+                    },
+                    @endcan
+                    @can('access_default_selling_price')
+                    {
+                        data: 'selling_price', name: 'max_price', searchable: false
+                    },
+                    @endcan
+                    {data: 'profit_percent', name: 'profit_percent'},
+                    {
+                        data: 'current_stock',name:'current_stock', searchable: false
+                    },
+                    // { data: 'cost', name: 'product.sales_price'},
+
+                    {data: 'item_location', name: 'item_location'},
+                    {data: 'qty_box', name: 'qty_box'},
+                      
+                       
+                    
+                    // {data: 'type', name: 'products.type'},
+                    {data: 'category', name: 'c1.name'},
+                    {data:'vendor' , name:'vendor'},
+
+                    {data: 'sub_category', name: 'c2.name'},
+                    // {data: 'brand', name: 'brands.name'},
+                    // {data: 'tax', name: 'tax', searchable: false},
+                    // {data: 'product_custom_field1', name: 'products.product_custom_field1'},
+                    // {data: 'product_custom_field2', name: 'products.product_custom_field2'},
+                    // {data: 'product_custom_field3', name: 'products.product_custom_field3'},
+                    // {data: 'product_custom_field4', name: 'products.product_custom_field4'}
+
+                ],
+                createdRow: function (row, data, dataIndex) {
+                    if ($('input#is_rack_enabled').val() == 1) {
+                        var target_col = 0;
+                        @can('product.delete')
+                            target_col = 1;
+                        @endcan
+                        $(row).find('td:eq(' + target_col + ') div').prepend('<i style="margin:auto;" class="fa fa-plus-circle text-success cursor-pointer no-print rack-details" title="' + LANG.details + '"></i>&nbsp;&nbsp;');
+                    }
+                    $(row).find('td:eq(0)').attr('class', 'selectable_td');
+                },
+                fnDrawCallback: function (oSettings) {
+                    __currency_convert_recursively($('#product_table'));
+                },
+            });
+            // Array to track the ids of the details displayed rows
+            var detailRows = [];
+
+            $('#product_table tbody').on('click', 'tr i.rack-details', function () {
+                var i = $(this);
+                var tr = $(this).closest('tr');
+                var row = product_table.row(tr);
+                var idx = $.inArray(tr.attr('id'), detailRows);
+
+                if (row.child.isShown()) {
+                    i.addClass('fa-plus-circle text-success');
+                    i.removeClass('fa-minus-circle text-danger');
+
+                    row.child.hide();
+
+                    // Remove from the 'open' array
+                    detailRows.splice(idx, 1);
+                } else {
+                    i.removeClass('fa-plus-circle text-success');
+                    i.addClass('fa-minus-circle text-danger');
+
+                    row.child(get_product_details(row.data())).show();
+
+                    // Add to the 'open' array
+                    if (idx === -1) {
+                        detailRows.push(tr.attr('id'));
+                    }
+                }
+            });
+
+            $('table#product_table tbody').on('click', 'a.delete-product', function (e) {
+                e.preventDefault();
+                swal({
+                    title: LANG.sure,
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true,
+                }).then((willDelete) => {
+                    if (willDelete) {
+                        var href = $(this).attr('href');
+                        $.ajax({
+                            method: "DELETE",
+                            url: href,
+                            dataType: "json",
+                            success: function (result) {
+                                if (result.success == true) {
+                                    toastr.success(result.msg);
+                                    product_table.ajax.reload();
+                                } else {
+                                    toastr.error(result.msg);
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            $(document).on('click', '#delete-selected', function (e) {
+                e.preventDefault();
+                var selected_rows = getSelectedRows();
+
+                if (selected_rows.length > 0) {
+                    $('input#selected_rows').val(selected_rows);
+                    swal({
+                        title: LANG.sure,
+                        icon: "warning",
+                        buttons: true,
+                        dangerMode: true,
+                    }).then((willDelete) => {
+                        if (willDelete) {
+                            $('form#mass_delete_form').submit();
+                        }
+                    });
+                } else {
+                    $('input#selected_rows').val('');
+                    swal('@lang("lang_v1.no_row_selected")');
+                }
+            });
+
+            $(document).on('click', '#deactivate-selected', function (e) {
+                e.preventDefault();
+                var selected_rows = getSelectedRows();
+
+                if (selected_rows.length > 0) {
+                    $('input#selected_products').val(selected_rows);
+                    swal({
+                        title: LANG.sure,
+                        icon: "warning",
+                        buttons: true,
+                        dangerMode: true,
+                    }).then((willDelete) => {
+                        if (willDelete) {
+                            var form = $('form#mass_deactivate_form')
+
+                            var data = form.serialize();
+                            $.ajax({
+                                method: form.attr('method'),
+                                url: form.attr('action'),
+                                dataType: 'json',
+                                data: data,
+                                success: function (result) {
+                                    if (result.success == true) {
+                                        toastr.success(result.msg);
+                                        product_table.ajax.reload();
+                                        form
+                                            .find('#selected_products')
+                                            .val('');
+                                    } else {
+                                        toastr.error(result.msg);
+                                    }
+                                },
+                            });
+                        }
+                    });
+                } else {
+                    $('input#selected_products').val('');
+                    swal('@lang("lang_v1.no_row_selected")');
+                }
+            })
+
+            $(document).on('click', '#edit-selected', function (e) {
+                e.preventDefault();
+                var selected_rows = getSelectedRows();
+
+                if (selected_rows.length > 0) {
+                    $('input#selected_products_for_edit').val(selected_rows);
+                    $("#product_id").val(selected_rows);
+                    $("#bulkeditmodal").modal("show");
+                    
+                } else {
+                    $('input#selected_products').val('');
+                    swal('@lang("lang_v1.no_row_selected")');
+                }
+            })
+
+            $('table#product_table tbody').on('click', 'a.activate-product', function (e) {
+                e.preventDefault();
+                var href = $(this).attr('href');
+                $.ajax({
+                    method: "get",
+                    url: href,
+                    dataType: "json",
+                    success: function (result) {
+                        if (result.success == true) {
+                            toastr.success(result.msg);
+                            product_table.ajax.reload();
+                        } else {
+                            toastr.error(result.msg);
+                        }
+                    }
+                });
+            });
+
+            $(document).on('change', '#product_list_filter_type, #product_list_filter_category_id, #product_list_filter_brand_id, #product_list_filter_unit_id, #product_list_filter_tax_id, #location_id, #active_state, #repair_model_id',
+                function () {
+                    if ($("#product_list_tab").hasClass('active')) {
+                        product_table.ajax.reload();
+                    }
+
+                    if ($("#product_stock_report").hasClass('active')) {
+                        stock_report_table.ajax.reload();
+                    }
+                });
+
+            $(document).on("click", "#select-all-row", function(){
+                $(".row-select").attr('checked', this.checked);
+            });
+
+            $(document).on('ifChanged', '#not_for_selling, #woocommerce_enabled', function () {
+                if ($("#product_list_tab").hasClass('active')) {
+                    product_table.ajax.reload();
+                }
+
+                if ($("#product_stock_report").hasClass('active')) {
+                    stock_report_table.ajax.reload();
+                }
+            });
+
+            $('#product_location').select2({dropdownParent: $('#product_location').closest('.modal')});
+        });
+
+        $(document).on('shown.bs.modal', 'div.view_product_modal, div.view_modal',
+            function () {
+                var div = $(this).find('#view_product_stock_details');
+                if (div.length) {
+                    $.ajax({
+                        url: "{{action('ReportController@getStockReport')}}" + '?for=view_product&product_id=' + div.data('product_id'),
+                        dataType: 'html',
+                        success: function (result) {
+                            div.html(result);
+                            __currency_convert_recursively(div);
+                        },
+                    });
+                }
+                __currency_convert_recursively($(this));
+            });
+        var data_table_initailized = false;
+        $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+            if ($(e.target).attr('href') == '#product_stock_report') {
+                if (!data_table_initailized) {
+                    //Stock report table
+                    var stock_report_cols = [
+                        {data: 'sku', name: 'variations.sub_sku'},
+                        {data: 'product', name: 'p.name'},
+                        // { data: 'location_name', name: 'l.name' },
+                        {data: 'unit_price', name: 'variations.sell_price_inc_tax'},
+                        {data: 'stock', name: 'stock', searchable: false},
+                            @can('view_product_stock_value')
+                        {
+                            data: 'stock_price', name: 'stock_price', searchable: false
+                        },
+                        {
+                            data: 'stock_value_by_sale_price',
+                            name: 'stock_value_by_sale_price',
+                            searchable: false,
+                            orderable: false
+                        },
+                        {data: 'potential_profit', name: 'potential_profit', searchable: false, orderable: false},
+                            @endcan
+                        {
+                            data: 'total_sold', name: 'total_sold', searchable: false
+                        },
+                        {data: 'total_transfered', name: 'total_transfered', searchable: false},
+                        {data: 'total_adjusted', name: 'total_adjusted', searchable: false}
+                    ];
+                    if ($('th.current_stock_mfg').length) {
+                        stock_report_cols.push({data: 'total_mfg_stock', name: 'total_mfg_stock', searchable: false});
+                    }
+                    stock_report_table = $('#stock_report_table').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: {
+                            url: '/reports/stock-report',
+                            data: function (d) {
+                                d.location_id = $('#location_id').val();
+                                d.category_id = $('#product_list_filter_category_id').val();
+                                d.brand_id = $('#product_list_filter_brand_id').val();
+                                d.unit_id = $('#product_list_filter_unit_id').val();
+                                d.type = $('#product_list_filter_type').val();
+                                d.active_state = $('#active_state').val();
+                                d.not_for_selling = $('#not_for_selling').is(':checked');
+                                if ($('#repair_model_id').length == 1) {
+                                    d.repair_model_id = $('#repair_model_id').val();
+                                }
+                            }
+                        },
+                        columns: stock_report_cols,
+                        fnDrawCallback: function (oSettings) {
+                            $('#footer_total_stock').html(__sum_stock($('#stock_report_table'), 'current_stock'));
+                            $('#footer_total_sold').html(__sum_stock($('#stock_report_table'), 'total_sold'));
+                            $('#footer_total_transfered').html(
+                                __sum_stock($('#stock_report_table'), 'total_transfered')
+                            );
+                            $('#footer_total_adjusted').html(
+                                __sum_stock($('#stock_report_table'), 'total_adjusted')
+                            );
+                            var total_stock_price = sum_table_col($('#stock_report_table'), 'total_stock_price');
+                            var total_stock_value_by_sale_price = sum_table_col($('#stock_report_table'), 'stock_value_by_sale_price');
+                            $('#footer_stock_value_by_sale_price').text(total_stock_value_by_sale_price);
+
+                            var total_potential_profit = sum_table_col($('#stock_report_table'), 'potential_profit');
+                            $('#footer_potential_profit').text(total_potential_profit);
+
+                            $('#footer_total_stock_price').text(total_stock_price);
+                            __currency_convert_recursively($('#stock_report_table'));
+                        },
+                    });
+                    data_table_initailized = true;
+                } else {
+                    stock_report_table.ajax.reload();
+                }
+            } else {
+                product_table.ajax.reload();
+            }
+        });
+
+        function getSelectedRows() {
+            var selected_rows = [];
+            var i = 0;
+            $('.row-select:checked').each(function () {
+                selected_rows[i++] = $(this).val();
+            });
+
+            return selected_rows;
+        }
+
+        $(document).on('click', '.update_product_location', function (e) {
+            e.preventDefault();
+            var selected_rows = getSelectedRows();
+
+            if (selected_rows.length > 0) {
+                $('input#selected_products').val(selected_rows);
+                var type = $(this).data('type');
+                var modal = $('#edit_product_location_modal');
+                if (type == 'add') {
+                    modal.find('.remove_from_location_title').addClass('hide');
+                    modal.find('.add_to_location_title').removeClass('hide');
+                } else if (type == 'remove') {
+                    modal.find('.add_to_location_title').addClass('hide');
+                    modal.find('.remove_from_location_title').removeClass('hide');
+                }
+
+                modal.modal('show');
+                modal.find('#product_location').select2({dropdownParent: modal});
+                modal.find('#product_location').val('').change();
+                modal.find('#update_type').val(type);
+                modal.find('#products_to_update_location').val(selected_rows);
+            } else {
+                $('input#selected_products').val('');
+                swal('@lang("lang_v1.no_row_selected")');
+            }
+        });
+
+        $(document).on('submit', 'form#edit_product_location_form', function (e) {
+            e.preventDefault();
+            $(this)
+                .find('button[type="submit"]')
+                .attr('disabled', true);
+            var data = $(this).serialize();
+
+            $.ajax({
+                method: $(this).attr('method'),
+                url: $(this).attr('action'),
+                dataType: 'json',
+                data: data,
+                success: function (result) {
+                    if (result.success == true) {
+                        $('div#edit_product_location_modal').modal('hide');
+                        toastr.success(result.msg);
+                        product_table.ajax.reload();
+                        $('form#edit_product_location_form')
+                            .find('button[type="submit"]')
+                            .attr('disabled', false);
+                    } else {
+                        toastr.error(result.msg);
+                    }
+                },
+            });
+        });
+
+        $("#cost_price").change(function(){
+            $("#sell_price").prop("disabled", true);
+            $("#gross_profit").prop("disabled",true);
+        });
+        $("#sell_price").change(function(){
+            $("#cost_price").prop("disabled", true);
+            $("#gross_profit").prop("disabled",true);
+        });
+        $("#gross_profit").change(function(){
+            $("#sell_price").prop("disabled", true);
+            $("#cost_price").prop("disabled",true);
+        });
+
+
+        function synccheck(){
+            if($("#notforselling").prop("checked") == true){
+                $("#woocommerce_disable_sync").prop("checked", true);
+                console.log("Checkbox is checked.");
+            }
+            else if($("#notforselling").prop("checked") == false){
+                $("#woocommerce_disable_sync").prop("checked", false);
+                console.log("Checkbox is unchecked.");
+            }
+        }
+       
+        $("#editbulkupdate").on('click',function(){
+		
+            if($("#notforselling").prop('checked') == true){
+             var not_for_selling =  $("#notforselling").val()
+            }
+    
+            if($("#woocommerce_disable_sync").prop('checked') == true){
+                var woocommerce_disable_sync = $("#woocommerce_disable_sync").val()
+            }
+
+            if($("#outofstock").prop('checked') == true){
+                var outofstock = $("#outofstock").val()
+            }
+            
+            if($("#sync_with_woocommerce").prop('checked') == true){
+                var sync_with_woocommerce = $("#sync_with_woocommerce").val();
+            }
+            if($("#forselling").prop('checked') == true){
+                var forselling = $("#forselling").val();
+            }
+            if($("#instock").prop('checked') == true){
+                var instock = $("#instock").val();
+            }
+    
+            var formData = {
+                cost_price: $("#cost_price").val(),
+                sell_price: $("#sell_price").val(),
+                gross_profit: $("#gross_profit").val(),
+                woocommerce_disable_sync: woocommerce_disable_sync,
+                not_for_selling: not_for_selling,
+                category_id: $("#category_id").val(),
+                sub_category_id: $("#sub_category_id").val(),
+                product_id: $("#product_id").val(),
+                brand_id: $("#brand_id").val(),
+                outofstock: outofstock,
+                sync_with_woocommerce: sync_with_woocommerce,
+                forselling: forselling,
+                instock: instock
+              };
+    
+              $.ajax({
+                method: 'POST',
+                url:"{{ url('products/edit-bulk') }}",
+                data:formData ,
+                success: function(result) {
+                   if (result.success == true) {
+                        toastr.success(result.msg);
+                        product_table.ajax.reload();
+                        $("#bulkeditmodal").modal('hide');
+                        $("#cost_price").prop("disabled", false);
+                        $("#gross_profit").prop("disabled",false);
+                        $("#sell_price").prop("disabled", false);
+                        $("#cost_price").val('');
+                        $("#gross_profit").val('');
+                        $("#sell_price").val('');
+                        $("#product_id").val('');
+                        $("#notforselling").prop("checked", false);
+                        $("#woocommerce_disable_sync").prop("checked", false);
+                        $("#outofstock").prop("checked", false);
+                        $("#sync_with_woocommerce").prop("checked", false);
+                        $("#forselling").prop("checked", false);
+                        $("#category_id").val([0]).trigger("change");
+                        $("#brand_id").val([0]).trigger("change");
+                    } else {
+                        toastr.error(result.msg);
+                    }
+                   
+                    
+                 },
+            });
+        });
+        // bulk edit start
+        $(document).on('change', 'select.category_id', function() {
+            var cat = $(this).val();
+            if(cat==0)
+            {v
+                $('#sub_category_id').html('<option value="">None</option>');
+            }
+            var tr = $(this).closest('tr');
+            $.ajax({
+                method: 'POST',
+                url: '/products/get_sub_categories',
+                dataType: 'html',
+                data: { cat_id: cat },
+                success: function(result) {
+                    if (result) {
+                        $('#sub_category_id').html(result);
+                    }
+                },
+            });
+        });
+        // bulk edit end
+    
+        // //action droupdown open
+        // (function () {
+        //     var dropdownMenu;
+        //     $(window).on('show.bs.dropdown', function (e) {
+        //     dropdownMenu =  $('div .btn-group').find('.dropdown-menu');
+        //     $('body').append(dropdownMenu.detach());
+        
+        //     var eOffset = $(e.target).offset();
+        
+        //     dropdownMenu.css({
+        //         'display': 'block',
+        //             'top': eOffset.top + $(e.target).outerHeight(),
+        //             'left': eOffset.left
+        //       });
+        //     });
+        
+        //     $(window).on('hide.bs.dropdown', function (e) {
+        //         $(e.target).append(dropdownMenu.detach());
+        //         dropdownMenu.hide();
+        //     });
+        // })();
+        
+
+    </script>
+@endsection

@@ -1,0 +1,56 @@
+.tab-menu{
+    padding-left: 50px;
+}
+.toBePickedTab{
+    background-color: white;
+    border: 1px solid lightgray;
+}
+.pickedTab{
+    background-color: #A5DC86;
+    border: 1px solid lightgray;
+}
+.notThereTab{
+    background-color: #6DB8FF;
+    border: 1px solid lightgray;
+}
+.editedTab{
+    background-color: #F35C5C;
+    border: 1px solid lightgray;
+}
+.locationIncorrectTab{
+    background-color: #B06CFD;
+    border: 1px solid lightgray;
+}
+
+.pickedBtn{
+    background-color: #A5DC86;
+    border: 1px solid lightgray;
+}
+.notThereBtn{
+    background-color: #6DB8FF;
+    border: 1px solid lightgray;
+}
+.editedBtn{
+    background-color: #F35C5C;
+    border: 1px solid lightgray;
+}
+.locationIncorrectBtn{
+    background-color: #B06CFD;
+    border: 1px solid lightgray;
+}
+
+.nav-pills .nav-link.active, .nav-pills .show>.nav-link{
+    color: black;
+    background-color: inherit;
+    border-radius: unset;
+    border: 2px solid orange;
+}
+
+.timer{
+    position: fixed;
+    top: 0;
+    right: 50px;
+    font-size: 20px;
+    font-weight: bold;
+    color: red;
+}

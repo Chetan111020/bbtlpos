@@ -1,0 +1,456 @@
+<!-- <div class="row">
+	<div class="col-md-12">
+		<p><strong>@lang('sale.invoice_no'):</strong> {{$transaction->invoice_no}}</p>
+	</div>
+	<div class="col-md-4">
+		<div class="form-group" style="width: 100% !important">
+			<div class="input-group">
+				<span class="input-group-addon">
+					<i class="fa fa-user"></i>
+				</span>
+				<input type="hidden" id="default_customer_id"
+				value="{{ $transaction->contact->id }}" >
+				<input type="hidden" id="default_customer_name"
+				value="{{ $transaction->contact->name }}" >
+				<input type="hidden" id="default_customer_balance"
+				value="{{$transaction->contact->balance}}" >
+				{!! Form::select('contact_id',
+					[], null, ['class' => 'form-control mousetrap', 'id' => 'customer_id', 'placeholder' => 'Enter Customer name / phone', 'required', 'style' => 'width: 100%;']); !!}
+				<span class="input-group-btn">
+					<button type="button" class="btn btn-default bg-white btn-flat add_new_customer" data-name=""  @if(!auth()->user()->can('customer.create')) disabled @endif><i class="fa fa-plus-circle text-primary fa-lg"></i></button>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-8">
+		<div class="form-group">
+			<div class="input-group">
+				<div class="input-group-btn">
+					<button type="button" class="btn btn-default bg-white btn-flat" data-toggle="modal" data-target="#configure_search_modal" title="{{__('lang_v1.configure_product_search')}}"><i class="fa fa-barcode"></i></button>
+				</div>
+				{!! Form::text('search_product', null, ['class' => 'form-control mousetrap', 'id' => 'search_product', 'placeholder' => __('lang_v1.search_product_placeholder'),
+				'autofocus' => true,
+				]); !!}
+				<span class="input-group-btn">
+
+					@if(isset($pos_settings['enable_weighing_scale']) && $pos_settings['enable_weighing_scale'] == 1)
+						<button type="button" class="btn btn-default bg-white btn-flat" id="weighing_scale_btn" data-toggle="modal" data-target="#weighing_scale_modal"
+						title="@lang('lang_v1.weighing_scale')"><i class="fa fa-digital-tachograph text-primary fa-lg"></i></button>
+					@endif
+
+					<button type="button" class="btn btn-default bg-white btn-flat pos_add_quick_product" data-href="{{action('ProductController@quickAdd')}}" data-container=".quick_add_product_modal"><i class="fa fa-plus-circle text-primary fa-lg"></i></button>
+				</span>
+			</div>
+		</div>
+	</div>
+</div> -->
+<div class="row">
+	<div class="col-md-12">
+		<p><strong>@lang('sale.invoice_no'):</strong> {{$transaction->invoice_no}}</p>
+	</div>
+	<div class="col-md-4">
+		<div class="form-group">
+			<div class="input-group">
+				<span class="input-group-addon">
+					<i class="fa fa-user"></i>
+				</span>
+				<input type="hidden" id="default_customer_id"
+				value="{{ $walk_in_customer['id'] ?? ''}}" >
+				<input type="hidden" id="default_customer_name"
+				value="{{ $walk_in_customer['name'] ?? ''}}" >
+				<input type="hidden" id="default_customer_balance"
+				value="{{ $walk_in_customer['balance'] ?? ''}}" >
+				<input type="hidden" id="customer_state" value="{{ $transaction->contact->state ?? ''}}">
+				<?php $contact_arr = array($transaction->contact->id=>$transaction->contact->name); ?>
+				{!! Form::select('contact_id', (isset($transaction->contact->name)) ? [$transaction->contact->id=>$transaction->contact->name] : null, (isset($transaction->contact->name)) ? $transaction->contact->id : null, ['class' => 'form-control mousetrap', 'id' => 'customer_id', 'placeholder' => (isset($transaction->contact->name) && $transaction->contact->name) ? '' : 'Enter Customer name / phone', 'required', 'style' => 'width: 100%;']); !!}
+				<span class="input-group-btn">
+					<button style="font-size: 20px;" type="button" class="btn btn-default bg-white btn-flat add_new_customer" data-name=""  @if(!auth()->user()->can('customer.create')) disabled @endif><i class="fa fa-plus-circle text-primary fa-lg"></i></button>
+				</span>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-5">
+		<div class="form-group">
+			<div class="input-group">
+				<div class="input-group-btn">
+					<button style="font-size: 20px;" type="button" class="btn btn-default bg-white btn-flat" data-toggle="modal" data-target="#configure_search_modal" title="{{__('lang_v1.configure_product_search')}}"><i class="fa fa-barcode"></i></button>
+				</div>
+				{!! Form::text('search_product', null, ['class' => 'form-control mousetrap', 'id' => 'search_product_pos_one', 'placeholder' => __('lang_v1.search_product_placeholder'),
+				'disabled' => (isset($default_location) && is_null($default_location))? true : false,
+				'autofocus' => (isset($default_location) && is_null($default_location))? false : false,
+				]); !!}
+				<span class="input-group-btn">
+					<!-- Show button for weighing scale modal -->
+					@if(isset($pos_settings['enable_weighing_scale']) && $pos_settings['enable_weighing_scale'] == 1)
+						<button style="font-size: 20px;" type="button" class="btn btn-default bg-white btn-flat" id="weighing_scale_btn" data-toggle="modal" data-target="#weighing_scale_modal"
+						title="@lang('lang_v1.weighing_scale')"><i class="fa fa-digital-tachograph text-primary fa-lg"></i></button>
+					@endif
+					<button style="font-size: 20px;" type="button" class="btn btn-default bg-white btn-flat pos_add_quick_product" data-href="{{action('ProductController@quickAdd')}}" data-container=".quick_add_product_modal"><i class="fa fa-plus-circle text-primary fa-lg"></i></button>
+				</span>
+			</div>
+		</div>
+		<style type="text/css">
+			.qtypos{
+				width:10% !important;
+				min-width:10% !important;
+			}
+			.namepos{
+				width:80% !important;
+				min-width:80% !important;
+			}
+			.qtysalespricepos{
+				width:20% !important;
+				min-width:20% !important;
+			}
+		</style>
+		<div class="row">
+			<div id="open-datatable-one" class="table-responsive col-sm-9 col-sm-offset-2" style="z-index: 9999!important; position: absolute; background-color: #fff;margin: -5px 0 0 15px;border:1px solid #000;width: 153%;display:none">
+					<button type="button" class="btn btn-primary btn-flat" id="text-button"> Add All</button>
+				<table id="open-datatable" class="table dt-responsive nowrap w-100" width="100%">
+					<thead>
+						<tr>
+							<th class="qtypos">QTY</th>
+							<th class="namepos">Name</th>
+							<th class="item_codepos">Item Code</th>
+							<th class="qtysalespricepos">Sales<br>Price</th>
+						</tr>
+					</thead>
+				</table>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-3">
+		<div class="form-group">
+			<div class="input-group">
+				<div class="input-group-btn">
+					<button style="font-size: 20px;" type="button" class="btn btn-default bg-white btn-flat" data-toggle="modal" data-target="#configure_search_modal" title="{{__('lang_v1.configure_product_search')}}"><i class="fa fa-barcode"></i></button>
+				</div>
+				{!! Form::text('search_product', null, ['class' => 'form-control mousetrap', 'id' => 'search_product', 'placeholder' => __('Enter Barcode To See Product'),
+				'disabled' => (isset($default_location) && is_null($default_location))? true : false,
+				'autofocus' => (isset($default_location) && is_null($default_location))? false : true,
+				]); !!}
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row">
+	<div class="form-group addresses">
+		<div class="col-md-3">
+			<p>Address</p>
+			<?php // echo "<pre>"; print_r($transaction); die;?>
+			<p><span>@if($transaction->contact->address_line_1)  {{$transaction->contact->address_line_1}}@endif </span>
+				<span>@if($transaction->contact->address_line_2) , {{$transaction->contact->address_line_2}}@endif </span>
+				<span>@if($transaction->contact->city) , {{$transaction->contact->city}}@endif </span>
+				<span>@if($transaction->contact->state) , {{$transaction->contact->state}}@endif </span>
+				<span>@if($transaction->contact->zip_code) , {{$transaction->contact->zip_code}}@endif </span></p>
+		</div>
+		<div class="col-md-3">
+			<p>Phone, Email</p>
+			<p>
+				<span>@if($transaction->contact->mobile)  {{$transaction->contact->mobile}}@endif </span>
+				<span>@if($transaction->contact->email) , {{$transaction->contact->email}}@endif </span>
+				</p>
+		</div>
+		<div class="col-md-2">
+			<p>Contact person 1</p>
+			<p>
+				<span>@if($transaction->contact->contact_person_1)  {{$transaction->contact->contact_person_1}}@endif </span>
+			</p>
+		</div>
+		<div class="col-md-2">
+			<p>Tax Id</p>
+			<p>
+				<span>@if($transaction->contact->tax)  {{$transaction->contact->tax}}@endif </span>
+			</p>
+		</div>
+
+		<div class="col-md-2">
+			<p><b class="text-red">Open Balance</b></p>
+			<p>
+				<span> <b class="text-red">  $ {{number_format($open_blance->total_invoice - $open_blance->invoice_received - $open_blance->balance + $open_blance->opening_balance - $open_blance->opening_balance_paid - $open_blance->total_sell_return, 2) }}</b></span>
+			</p>
+		</div>
+	</div>
+</div>
+<div class="row">
+	@if(!empty($pos_settings['show_invoice_layout']))
+	<div class="col-md-4">
+		<div class="form-group">
+		{!! Form::select('invoice_layout_id',
+					$invoice_layouts, $transaction->location->invoice_layout_id, ['class' => 'form-control select2', 'placeholder' => __('lang_v1.select_invoice_layout'), 'id' => 'invoice_layout_id']); !!}
+		</div>
+	</div>
+	@endif
+	<input type="hidden" name="pay_term_number" id="pay_term_number" value="{{$transaction->pay_term_number}}">
+	<input type="hidden" name="pay_term_type" id="pay_term_type" value="{{$transaction->pay_term_type}}">
+
+	@if(!empty($commission_agent))
+		<div class="col-sm-4">
+			<div class="form-group">
+			{!! Form::select('commission_agent',
+						$commission_agent, $transaction->commission_agent, ['class' => 'form-control select2', 'placeholder' => __('lang_v1.commission_agent')]); !!}
+			</div>
+		</div>
+		@endif
+	@if(!empty($pos_settings['enable_transaction_date']))
+		<div class="col-md-4 col-sm-6">
+			<div class="form-group">
+				<div class="input-group">
+					<span class="input-group-addon">
+						<i class="fa fa-calendar"></i>
+					</span>
+					@if(empty($default_datetime))
+					{!! Form::text('transaction_date', @format_datetime($transaction->transaction_date), ['class' => 'form-control', 'readonly', 'required', 'id' => 'transaction_date']); !!}
+					@else
+					{!! Form::text('transaction_date', $default_datetime, ['class' => 'form-control', 'readonly', 'required', 'id' => 'transaction_date']); !!}
+					@endif
+				</div>
+			</div>
+		</div>
+	@endif
+	@if(config('constants.enable_sell_in_diff_currency') == true)
+		<div class="col-md-4 col-sm-6">
+			<div class="form-group">
+				<div class="input-group">
+					<span class="input-group-addon">
+						<i class="fas fa-exchange-alt"></i>
+					</span>
+					{!! Form::text('exchange_rate', @num_format($transaction->exchange_rate), ['class' => 'form-control input-sm input_number', 'placeholder' => __('lang_v1.currency_exchange_rate'), 'id' => 'exchange_rate']); !!}
+				</div>
+			</div>
+		</div>
+	@endif
+    @if(!empty($transaction->selling_price_group_id || $transaction->contact->customer_group_id))
+		<div class="col-md-4 col-sm-6">
+			<div class="form-group">
+				<div class="input-group">
+					<span class="input-group-addon">
+						<i class="fas fa-money-bill-alt"></i>
+					</span>
+					{!! Form::hidden('price_group', ($transaction->selling_price_group_id) ? $transaction->selling_price_group_id : @$transaction->contact->customer_group_id, ['id' => 'price_group']) !!}
+					{!! Form::text('price_group_text', ($transaction->selling_price_group_id) ? @$transaction->price_group->name : @$transaction->contact->selling_price_groups->name, ['id' => 'price_group_text','class' => 'form-control', 'readonly']); !!}
+					<span class="input-group-addon">
+					@show_tooltip(__('lang_v1.price_group_help_text'))
+				</span>
+				</div>
+			</div>
+		</div>
+	@endif
+
+	@if(in_array('types_of_service', $enabled_modules) && !empty($transaction->types_of_service))
+		<div class="col-md-4 col-sm-6">
+			<div class="form-group">
+				<div class="input-group">
+					<span class="input-group-addon">
+						<i class="fas fa-external-link-square-alt text-primary service_modal_btn"></i>
+					</span>
+					{!! Form::text('types_of_service_text', $transaction->types_of_service->name, ['class' => 'form-control', 'readonly']); !!}
+
+					{!! Form::hidden('types_of_service_id', $transaction->types_of_service_id, ['id' => 'types_of_service_id']) !!}
+					<span class="input-group-addon">
+						@show_tooltip(__('lang_v1.types_of_service_help'))
+					</span>
+				</div>
+				<small><p class="help-block @if(empty($transaction->selling_price_group_id)) hide @endif" id="price_group_text">@lang('lang_v1.price_group'): <span>@if(!empty($transaction->selling_price_group_id)){{@$transaction->price_group->name}}@endif</span></p></small>
+			</div>
+		</div>
+		<div class="modal fade types_of_service_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
+			@if(!empty($transaction->types_of_service))
+				@include('types_of_service.pos_form_modal', ['types_of_service' => $transaction->types_of_service])
+			@endif
+		</div>
+	@endif
+	@if($transaction->status == 'draft' && !empty($pos_settings['show_invoice_scheme']))
+		<div class="col-sm-3">
+			<div class="form-group">
+				{!! Form::select('invoice_scheme_id', $invoice_schemes, $default_invoice_schemes->id, ['class' => 'form-control', 'placeholder' => __('lang_v1.select_invoice_scheme')]); !!}
+			</div>
+		</div>
+	@endif
+	<!-- Call restaurant module if defined -->
+    @if(in_array('tables' ,$enabled_modules) || in_array('service_staff' ,$enabled_modules))
+    	<span id="restaurant_module_span" class="hide"
+    		data-transaction_id="{{$transaction->id}}">
+      		<div class="col-md-3"></div>
+    	</span>
+    @endif
+    @if(in_array('subscription', $enabled_modules))
+		<div class="col-md-4 col-sm-6">
+			<label>
+              {!! Form::checkbox('is_recurring', 1, $transaction->is_recurring, ['class' => 'input-icheck', 'id' => 'is_recurring']); !!} @lang('lang_v1.subscribe')?
+            </label><button type="button" data-toggle="modal" data-target="#recurringInvoiceModal" class="btn btn-link"><i class="fa fa-external-link-square-alt"></i></button>@show_tooltip(__('lang_v1.recurring_invoice_help'))
+		</div>
+	@endif
+	<div class="col-md-2" style="display:flex;">
+	    {{-- @if (auth()->user()->id == 6) --}}
+        <span class="btn btn-info new-rec" style="">Recalculate 📝</span>
+        {{-- @else
+        <span href="{{ route('pos.update.sellpricegroup',$transaction->id) }}" id="recalcbtn" class="btn btn-danger" style="">Recalculate</span>
+        @endif --}}
+		&nbsp;&nbsp;
+		<button type="button" class="btn btn-primary btn-flat" id="hide-column"> Customer View</button>
+	</div>
+	<div class="col-md-3">
+		<div class="form-group">
+			<div class="input-group">
+				<span class="input-group-addon">
+					<i class="fas fa-search"></i>
+				</span>
+				<input type="text" class="search-text" id="internal_search" placeholder="Search..." />
+			</div>
+		</div>
+	</div>
+	<div class="col-md-2">
+        <div class="form-group">
+          <div class="input-group">
+            @php
+              $default_location = null;
+              if(count($search_categories) == 1){
+                $default_location = array_key_first($search_categories->toArray());
+              }
+            @endphp
+            <span class="input-group-addon">
+             <i class="fas fa-list-ul"></i>
+            </span>
+            {!! Form::select('category_id[]', [], $default_location , [ 'class' => 'form-control select2', 'id'=>'category_id','multiple', 'data-placeholder'=>"Category"]); !!}
+          </div>
+        </div>
+    </div>
+</div>
+<!-- include module fields -->
+@if(!empty($pos_module_data))
+    @foreach($pos_module_data as $key => $value)
+        @if(!empty($value['view_path']))
+            @includeIf($value['view_path'], ['view_data' => $value['view_data']])
+        @endif
+    @endforeach
+@endif
+<div class="row">
+	<div class="col-sm-12 pos_product_div">
+		<input type="hidden" name="sell_price_tax" id="sell_price_tax" value="{{$business_details->sell_price_tax}}">
+
+		<!-- Keeps count of product rows -->
+		<input type="hidden" id="product_row_count"
+			value="{{count($sell_details)}}">
+		@php
+			$hide_tax = '';
+			if( session()->get('business.enable_inline_tax') == 0){
+				$hide_tax = 'hide';
+			}
+			if (isset($_COOKIE["hideColumn"]))
+	            $hideColumn = $_COOKIE["hideColumn"];
+	        else
+	            $hideColumn = 0;
+		@endphp
+		<input type="hidden" id="hideColumn" value="{{$hideColumn}}" />
+		<table class="table table-condensed table-bordered table-striped table-responsive" id="pos_table">
+			<thead>
+				<tr>
+					<th class="tex-center col-md-1">
+						Item Image
+					</th>
+					<th class="tex-center col-md-1">
+						@lang('Item Name')
+					</th>
+					<!-- <th class="text-center col-md-1">
+						@lang('Item Note')
+					</th> -->
+
+					<th class="text-center col-md-1">
+						@lang('Sales Price')
+					</th>
+
+					<th class="text-center col-md-1">
+						@lang('sale.qty')
+					</th>
+					<th class="text-center col-md-1">
+						On Hand
+					</th>
+					<th class="text-center col-md-1">
+						Qty in Box
+					</th>
+					<th class="text-center col-md-1">
+						ML
+					</th>
+					{{--<th class="text-center col-md-1">--}}
+						{{--@lang('Price')--}}
+					{{--</th>--}}
+					<th class="text-center col-md-1">
+						@lang('Total')
+					</th>
+					<th class="text-center col-md-1">
+						State Tax
+					</th>
+					<th class="text-center col-md-1">
+						@lang('City Tax')
+					</th>
+					<th class="text-center cost col-md-1"  style="@if($hideColumn==0) display:none; @else display:table-cell; @endif">
+					    @lang('Piece Price')
+					</th>
+					<th class="text-center gross-price col-md-1"  style="@if($hideColumn==0) display:none; @else display:table-cell; @endif">
+					    <span class="hide"> GP</span> @lang(' %')
+					</th>
+					<th class="text-center col-md-1">
+						@lang('Modified On')
+					</th>
+					<th class="text-center col-md-1">
+						Category
+					</th>
+					<th class="text-center col-md-1">
+						@lang('Sub Category')
+					</th>
+					<th class="text-center"><i class="fas fa-times" aria-hidden="true"></i></th>
+				</tr>
+			</thead>
+			<tbody>
+				@foreach($sell_details as $sell_line)
+
+				@include('sale_pos.product_row',
+					['product' => $sell_line,
+					'row_count' => $loop->index,
+					'tax_dropdown' => $taxes,
+					'tax'=>$sell_line['tax'],
+					'sub_units' => !empty($sell_line->unit_details) ? $sell_line->unit_details : [],
+					'action' => 'edit',
+					'cost' => $sell_line->cost,
+					'edit_qty' => auth()->user()->can('edit_product_qty_from_pos_screen'),
+                    'del_prod' => auth()->user()->can('delete_product_from_pos_screen'),
+                    'stock_history' => $sell_line['stock_history']
+
+				])
+			@endforeach
+			</tbody>
+		</table>
+	</div>
+	<div class="internal-search">
+		<p>Internal search Amounts:</p>
+		<ul>
+			<li> Quantity:<span class="internal-total-qty"></span></li>
+			<li> Sub Total: <span class="internal-sub-total"></span></li>
+			<li> Total Tax:<span class="internal-total-tax"></span></li>
+			<li> Total Amount: <span class="internal-total-amt"></span></li>
+		</ul>
+	</div>
+</div>
+
+<style>
+	div.dataTables_filter input {
+		 border: 1px solid black;
+		 margin-left: 0;
+		 margin: 0 0  0 -50px!important;
+	}
+	tr td div a:focus {
+	color: red;
+	outline: none;
+	}
+	.internal-search ul li{
+		display: inline-block;
+		padding-left: 10px;
+		font-weight: 700;
+	}
+	.internal-search p{
+		font-weight: 600;
+		padding-left: 20px;
+	}
+</style>
+

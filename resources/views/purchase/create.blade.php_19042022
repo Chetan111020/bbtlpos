@@ -1,0 +1,908 @@
+@extends('layouts.app')
+@section('title', __('purchase.add_purchase'))
+
+@section('content')
+<style type="text/css">
+	.hide {
+		display: none;
+	}
+	.show{
+		display: block;
+	}
+	.table-height {
+		height: 600px;
+	}
+	.text-wrap{
+	    white-space:normal;
+	}
+	.width-90{
+	    width:90%;
+	}
+	.failure{
+		color: #a94442; border-color: #ebccd1; display: none;
+	}
+	.fileinput-upload-button
+	{
+		display: none;
+	}
+</style>
+	<!-- Content Header (Page header) -->
+	<section class="content-header">
+		<h1>@lang('Add Vendor Bill') <i class="fa fa-keyboard-o hover-q text-muted" aria-hidden="true" data-container="body" data-toggle="popover" data-placement="bottom" data-content="@include('purchase.partials.keyboard_shortcuts_details')" data-html="true" data-trigger="hover" data-original-title="" title=""></i></h1>
+	</section>
+
+	<!-- Main content -->
+	<section class="content">
+		<!-- Page level currency setting -->
+		<input type="hidden" id="p_code" value="{{$currency_details->code}}">
+		<input type="hidden" id="p_symbol" value="{{$currency_details->symbol}}">
+		<input type="hidden" id="p_thousand" value="{{$currency_details->thousand_separator}}">
+		<input type="hidden" id="p_decimal" value="{{$currency_details->decimal_separator}}">
+
+		@include('layouts.partials.error')
+
+		{!! Form::open(['url' => action('PurchaseController@store'), 'method' => 'post', 'id' => 'add_purchase_form', 'files' => true ]) !!}
+		@component('components.widget', ['class' => 'box-primary'])
+		<input type="hidden" id="item_addition_method" value="1">
+			<div class="row">
+				<div class="@if(!empty($default_purchase_status)) col-sm-4 @else col-sm-3 @endif">
+					<div class="form-group">
+						{!! Form::label('supplier_id', __('purchase.supplier') . ':*') !!}
+						<div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-user"></i>
+							</span>
+							{!! Form::select('contact_id', [ request()->get('contact_id') => request()->get('contact_name')], request()->get('contact_id'), ['class' => 'form-control', 'placeholder' => __('messages.please_select'), 'required', 'id' => 'supplier_id']); !!}
+							<span class="input-group-btn">
+								<button type="button" class="btn btn-default bg-white btn-flat add_new_supplier" data-name=""><i class="fa fa-plus-circle text-primary fa-lg"></i></button>
+							</span>
+						</div>
+					</div>
+				</div>
+				<div class="@if(!empty($default_purchase_status)) col-sm-4 @else col-sm-3 @endif">
+					<div class="form-group">
+						{!! Form::label('ref_no', __('purchase.ref_no').':') !!}
+						{!! Form::text('ref_no', request()->get('ref_no'), ['class' => 'form-control','id' => 'ref_no']); !!}
+						<span style="color:red" class="error"></span>
+					</div>
+				</div>
+				<div class="@if(!empty($default_purchase_status)) col-sm-4 @else col-sm-3 @endif">
+					<div class="form-group">
+						{!! Form::label('transaction_date', __('Received Date') . ':*') !!}
+						<div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-calendar"></i>
+							</span>
+							{!! Form::text('transaction_date', request()->get('transaction_date') ? request()->get('transaction_date') : @format_datetime('now'), ['class' => 'form-control', 'required']); !!}
+						</div>
+					</div>
+				</div>
+				<div class="@if(!empty($default_purchase_status)) col-sm-4 @else col-sm-3 @endif">
+					<div class="form-group">
+						{!! Form::label('received_date', __('Invoiced Date') . ':*') !!}
+						<div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-calendar"></i>
+							</span>
+							{!! Form::text('received_date', @format_datetime('now'), ['class' => 'form-control', 'required']); !!}
+						</div>
+					</div>
+				</div>
+				<div style="display:none" class="col-sm-3 @if(!empty($default_purchase_status)) hide @endif">
+					<div  class="form-group">
+						{!! Form::label('status', __('purchase.purchase_status') . ':*') !!} @show_tooltip(__('tooltip.order_status'))
+						{!! Form::select('status', $orderStatuses,'received', ['class' => 'form-control select2', 'placeholder' => __('messages.please_select'), 'required']); !!}
+					</div>
+				</div>
+
+				
+				@if(count($business_locations) == 1)
+					@php 
+						$default_location = current(array_keys($business_locations->toArray()));
+						$search_disable = false; 
+					@endphp
+				@else
+					@php $default_location = null;
+					$search_disable = true;
+					@endphp
+				@endif
+				<div style="display:none" class="col-sm-3">
+					<div class="form-group">
+						{!! Form::label('location_id', __('purchase.business_location').':*') !!}
+						@show_tooltip(__('tooltip.purchase_location'))
+						{!! Form::select('location_id', $business_locations, $default_location, ['class' => 'form-control select2', 'placeholder' => __('messages.please_select'), 'required'], $bl_attributes); !!}
+					</div>
+				</div>
+
+				<!-- Currency Exchange Rate -->
+				<div class="col-sm-3 @if(!$currency_details->purchase_in_diff_currency) hide @endif">
+					<div class="form-group">
+						{!! Form::label('exchange_rate', __('purchase.p_exchange_rate') . ':*') !!}
+						@show_tooltip(__('tooltip.currency_exchange_factor'))
+						<div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-info"></i>
+							</span>
+							{!! Form::number('exchange_rate', $currency_details->p_exchange_rate, ['class' => 'form-control', 'required', 'step' => 0.001]); !!}
+						</div>
+						<span class="help-block text-danger">
+							@lang('purchase.diff_purchase_currency_help', ['currency' => $currency_details->name])
+						</span>
+					</div>
+				</div>
+
+				<div class="col-md-3" style="display: none;">
+					<div class="form-group">
+						<div class="multi-input">
+						{!! Form::label('pay_term_number', __('contact.pay_term') . ':') !!} @show_tooltip(__('tooltip.pay_term'))
+						<br/>
+						{!! Form::number('pay_term_number', null, ['class' => 'form-control width-40 pull-left', 'placeholder' => __('contact.pay_term')]); !!}
+
+						{!! Form::select('pay_term_type', 
+							['months' => __('lang_v1.months'), 
+								'days' => __('lang_v1.days')], 
+								null, 
+							['class' => 'form-control width-60 pull-left','placeholder' => __('messages.please_select'), 'id' => 'pay_term_type']); !!}
+						</div>
+					</div>
+				</div>
+
+				<div class="col-sm-3">
+					<div class="form-group">
+						{!! Form::label('document', __('purchase.attach_document') . ':') !!}
+						{!! Form::file('documents[]', ['id' => 'upload_document', 'accept' => implode(',', array_keys(config('constants.document_upload_mimes_types'))), 'class' => 'file']); !!}
+
+						<p class="help-block">
+							@lang('purchase.max_file_size', ['size' => (config('constants.document_size_limit') / 1000000)])
+							@includeIf('components.document_help_text')
+						</p>
+						<div class="contents"></div>
+						<br><span><a href="javascript:void(0);" class="add btn btn-default" >Add More</a></span>
+					</div>
+				</div>
+			</div>
+			
+		@endcomponent
+
+		@component('components.widget', ['class' => 'box-primary'])
+
+			<div class="row">
+			    <span id="successnew"></span>
+				<div class="col-sm-8 col-sm-offset-2">
+					<div class="form-group">
+						<div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-search"></i>
+							</span>
+							{!! Form::text('search_product', null, ['class' => 'form-control mousetrap', 'id' => 'search_product_two', 'placeholder' => __('lang_v1.search_product_placeholder'), 'disabled' => $search_disable]); !!}
+						</div>
+					</div>
+					<div class="alert-box failure" id="search_prod">No matching product found!</div>
+					<div class="alert-box failure" id="search_prod_not_sell">Not For Selling!</div>
+				</div>
+				<div class="col-sm-2">
+					<div class="form-group">
+						<button tabindex="-1" type="button" class="btn btn-link btn-modal"data-href="{{action('ProductController@quickAdd')}}" 
+					data-container=".quick_add_product_modal"><i class="fa fa-plus"></i> @lang( 'product.add_new_product' ) </button>
+					</div>
+				</div>
+			</div>
+			<!-- <div class="row" style="margin-bottom: 60px;">
+				<div class="table-responsive col-sm-8 col-sm-offset-2" style="z-index: 9999!important; position: absolute; background-color: #fff;">
+					<table id="open-datatable" class="table dt-responsive nowrap w-100">
+						<thead>
+							<tr>
+								<th>Code</th>
+								<th>Name</th>
+								<th>Cost</th>
+								<th>Sales Price</th>
+								<th>Qty In Box</th>
+							</tr>
+						</thead>
+					</table>
+				</div>
+			</div> -->
+			@php
+				$hide_tax = '';
+				if( session()->get('business.enable_inline_tax') == 0){
+					$hide_tax = 'hide';
+				}
+			@endphp
+			<div class="row">
+				<div class="col-sm-12">
+					<div class="card-body table-responsive p-0" id="entry_table_row">
+					    <input type="hidden" id="div_height" value="0">
+						<table style="background:#808080; color:#fff" class="table table-condensed table-bordered text-center table-striped table-head-fixed text-nowrap" id="purchase_entry_table">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>@lang( 'product.product_name' )</th>
+									<th>@lang( 'purchase.purchase_quantity' )</th>
+									<th>@lang( 'Cost' )</th>
+									<th>@lang( 'Additional Charges' )</th>
+									<th class="">@lang( 'Landed Price' )</th>
+									<th>@lang( 'purchase.line_total' )</th>
+									<th class="@if(!session('business.enable_editing_product_from_purchase')) hide @endif">
+										@lang( 'G P' )
+									</th>
+									<th>
+										@lang( 'product.selling_price' )
+										<!--<small>(@lang('product.inc_of_tax'))</small>-->
+									</th>
+									@if(session('business.enable_lot_number'))
+										<th>
+											@lang('lang_v1.lot_number')
+										</th>
+									@endif
+									@if(session('business.enable_product_expiry'))
+										<th>
+											@lang('product.mfg_date') / @lang('product.exp_date')
+										</th>
+									@endif
+									<th><i class="fa fa-trash" aria-hidden="true"></i></th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<hr/>
+					{!! Form::hidden('products_ids', request()->get('product_id')); !!}
+					{!! Form::hidden('variations_ids', request()->get('variation_id')); !!}
+
+					<div class="col-lg-3">
+						<div class="form-group">
+					        <div class="box-body">
+				              <div class="row">
+				                <div class="col-xs-6">
+					                {!! Form::label('ref_no', __('Shipping Charges').':') !!}
+									{!! Form::number('additional_charges', null, ['class' => 'form-control', 'id' => 'additional_charges']); !!}
+									{!! Form::hidden('shipping_charges', 0, ['class' => 'form-control input_number', 'id' => 'shipping_charges']); !!}
+									<div style="margin: 1px;">
+						               	<span class="btn btn-warning" onclick="additionalChargesFun()" style="margin-bottom: 5px; margin-top: 5px;">Apply</span>
+										<span class="btn btn-danger" onclick="additionalChargesRemove()">Reset</span>
+					              	</div>
+				                </div>
+
+				                <div class="col-xs-6">
+					                {!! Form::label('ref_no', __('Discount').':') !!}
+									{!! Form::number('discount_charges', null, ['class' => 'form-control', 'id' => 'discount_charges']); !!}
+									{!! Form::hidden('discount_amount', 0, ['class' => 'form-control input_number', 'id' => 'discount_amount']); !!}
+									{!! Form::hidden('discount_type', 'fixed', ['class' => 'form-control input_number', 'id' => 'discount_type']); !!}
+									<div style="margin: 1px;">
+										<span class="btn btn-warning" onclick="discountChargesFun()" style="margin-bottom: 5px; margin-top: 5px;">Apply</span>
+										<span class="btn btn-danger" onclick="discountChargesRemove()">Reset</span>
+									</div>
+				                </div>
+				              </div>
+								
+				            </div>
+
+				        </div>
+					</div>
+					<div class="pull-right col-md-5">
+						<table class="pull-right col-md-12">
+							<tr>
+								<th class="col-md-7 text-right">@lang( 'lang_v1.total_items' ):</th>
+								<td class="col-md-5 text-left">
+									<span id="total_quantity" class="display_currency" data-currency_symbol="false"></span>
+								</td>
+							</tr>
+							<tr class="hide">
+								<th class="col-md-7 text-right">@lang( 'purchase.total_before_tax' ):</th>
+								<td class="col-md-5 text-left">
+									<span id="total_st_before_tax" class="display_currency"></span>
+									<input type="hidden" id="st_before_tax_input" value=0>
+								</td>
+							</tr>
+							<tr>
+								<th class="col-md-7 text-right">@lang( 'purchase.net_total_amount' ):</th>
+								<td class="col-md-5 text-left">
+									<span id="total_subtotal" class="display_currency"></span>
+									<!-- This is total before purchase tax-->
+									<input type="hidden" id="total_subtotal_input" value=0  name="total_before_tax">
+									{!! Form::hidden('final_total', 0 , ['id' => 'grand_total_hidden']); !!}
+								</td>
+							</tr>
+							<tr class="" id="discount_show">
+								<th class="col-md-7 text-right">Discount:</th>
+								<th class="col-md-5 text-left">
+									<span id="total_discount" class="">0.00</span>
+									<!-- This is total before purchase tax-->
+									<input type="hidden" id="total_discount_input" value=0  name="total_discount_name">
+								</th>
+							</tr>
+						</table>
+					</div>
+
+					<input type="hidden" id="row_count" value="0">
+				</div>
+			</div>
+		@endcomponent
+		
+		<div style="display:block;">		
+		@component('components.widget', ['class' => 'box-primary componentHide'])
+			<div class="row">
+				<div class="col-sm-12">
+				<table class="table">
+					<tr>
+						<td colspan="4">
+							<div class="form-group">
+								{!! Form::label('additional_notes',__('purchase.additional_notes')) !!}
+								{!! Form::textarea('additional_notes', request()->get('additional_notes'), ['class' => 'form-control', 'rows' => 3]); !!}
+							</div>
+						</td>
+					</tr>
+
+				</table>
+				</div>
+			</div>
+		@endcomponent
+		</div>
+
+		<div style="display:none;">		
+		@component('components.widget', ['class' => 'box-primary componentHide'])
+			<div class="row">
+				<div class="col-sm-12">
+				<table class="table">
+					<tr>
+						<td class="col-md-3">
+							<div class="form-group">
+								{!! Form::label('discount_type_2', __( 'purchase.discount_type' ) . ':') !!}
+								{!! Form::select('discount_type_2', [ '' => __('lang_v1.none'), 'fixed' => __( 'lang_v1.fixed' ), 'percentage' => __( 'lang_v1.percentage' )], '', ['class' => 'form-control select2']); !!}
+							</div>
+						</td>
+						<td class="col-md-3">
+							<div class="form-group">
+							{!! Form::label('discount_amount_2', __( 'purchase.discount_amount' ) . ':') !!}
+							{!! Form::text('discount_amount_2', 0, ['class' => 'form-control input_number', 'required']); !!}
+							</div>
+						</td>
+						<td class="col-md-3">
+							&nbsp;
+						</td>
+						<td class="col-md-3">
+							<b>@lang( 'purchase.discount' ):</b>(-) 
+							<span id="discount_calculated_amount" class="display_currency">0</span>
+						</td>
+					</tr>
+					<tr>
+						<td>
+							<div class="form-group">
+							{!! Form::label('tax_id', __('purchase.purchase_tax') . ':') !!}
+							<select name="tax_id" id="tax_id" class="form-control select2" placeholder="'Please Select'">
+								<option value="" data-tax_amount="0" data-tax_type="fixed" selected>@lang('lang_v1.none')</option>
+								@foreach($taxes as $tax)
+									<option value="{{ $tax->id }}" data-tax_amount="{{ $tax->amount }}" data-tax_type="{{ $tax->calculation_type }}">{{ $tax->name }}</option>
+								@endforeach
+							</select>
+							{!! Form::hidden('tax_amount', 0, ['id' => 'tax_amount']); !!}
+							</div>
+						</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>
+							<b>@lang( 'purchase.purchase_tax' ):</b>(+) 
+							<span id="tax_calculated_amount" class="display_currency">0</span>
+						</td>
+					</tr>
+
+					<tr>
+						<td>
+							<div class="form-group">
+							{!! Form::label('shipping_details', __( 'purchase.shipping_details' ) . ':') !!}
+							{!! Form::text('shipping_details', null, ['class' => 'form-control']); !!}
+							</div>
+						</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>
+							<div class="form-group">
+							{!! Form::label('shipping_charges_2','(+) ' . __( 'purchase.additional_shipping_charges' ) . ':') !!}
+							{!! Form::text('shipping_charges_2', 0, ['class' => 'form-control input_number', 'required']); !!}
+							</div>
+						</td>
+					</tr>
+
+					<tr>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>&nbsp;</td>
+						<td>
+							{!! Form::hidden('final_total', 0 , ['id' => 'grand_total_hidden']); !!}
+							<b>@lang('purchase.purchase_total'): </b><span id="grand_total" class="display_currency" data-currency_symbol='true'>0</span>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="4">
+							<div class="form-group">
+								{!! Form::label('additional_notes_two',__('purchase.additional_notes')) !!}
+								{!! Form::textarea('additional_notes_two', null, ['class' => 'form-control', 'rows' => 3]); !!}
+							</div>
+						</td>
+					</tr>
+
+				</table>
+				</div>
+			</div>
+		@endcomponent
+		</div>
+
+		@component('components.widget', ['class' => 'box-primary componentpurchase_entry_tableHide'])
+			<div style="display:none">
+			<div class="box-body payment_row">
+				<div class="row">
+					<div class="col-md-12">
+						<strong>@lang('lang_v1.advance_balance'):</strong> <span id="advance_balance_text">0</span>
+						{!! Form::hidden('advance_balance', null, ['id' => 'advance_balance', 'data-error-msg' => __('lang_v1.required_advance_balance_not_available')]); !!}
+					</div>
+				</div>
+				@include('sale_pos.partials.payment_row_form', ['row_index' => 0, 'show_date' => true])
+				<hr>
+				<div class="row">
+					<div class="col-sm-12">
+						<div class="pull-right"><strong>@lang('purchase.payment_due'):</strong> <span id="payment_due">0.00</span></div>
+					</div>
+				</div>
+				<br>
+			</div>
+			</div>
+			<div class="box-body payment_row">
+				<div class="row">
+					<div class="col-sm-12">
+						<button type="button" id="submit_purchase_form" class="btn btn-primary pull-right btn-flat">@lang('messages.save')</button>
+						<button class="btn btn-danger pull-right btn-flat"><a href="{{ route('purchases.index') }}" style="color: white;">Cancel</a></button>
+					</div>
+				</div>
+			</div>
+		@endcomponent
+		{!! Form::close() !!}
+	</section>
+@endsection
+	<section class="section-div">
+	<!-- quick product modal -->
+	<div class="modal fade quick_add_product_modal" tabindex="-1" role="dialog" aria-labelledby="modalTitle" data-backdrop="static" aria-hidden="true"></div>
+	<div class="modal fade contact_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel">
+		@include('contact.create', ['quick_add' => true])
+	</div>
+	</section>
+	<!-- /.content -->
+	<style>
+		div.dataTables_filter input { border: 1px solid black; }
+		tr:nth-child(odd) td{
+            color: #777;
+        }
+		tr:nth-child(even) td{
+            color: #fff;
+        }
+		tr:nth-child(odd) td span{
+            color: #777;
+        }
+		tr:nth-child(even) td span{
+            color: #fff;
+        }
+	</style>
+
+@section('javascript')
+	<!-- <script src="{{ asset('js/pos.js?v=' . $asset_v) }}"></script> -->
+	<script src="{{ asset('js/purchase.js?v=' . $asset_v) }}"></script>
+	<script src="{{ asset('js/product.js?v=' . $asset_v) }}"></script>
+	<script type="text/javascript">
+		$(document).ready( function(){
+      		__page_leave_confirmation('#add_purchase_form');
+      		
+      		onScan.attachTo(document, {
+                suffixKeyCodes: [13], // enter-key expected at the end of a scan
+                reactToPaste: true, // Compatibility to built-in scanners in paste-mode (as opposed to keyboard-mode)
+                onScan: function(sCode, iQty) {
+                    $('input#search_product_two').val(sCode);
+                },
+                onScanError: function(oDebug) {
+                    console.log(oDebug);
+                },
+                minLength: 2,
+                ignoreIfFocusOn: ['input', '.form-control']
+                // onKeyDetect: function(iKeyCode){ // output all potentially relevant key events - great for debugging!
+                //     console.log('Pressed: ' + iKeyCode);
+                // }
+            });
+            
+      		$('.paid_on').datetimepicker({
+                format: moment_date_format + ' ' + moment_time_format,
+                ignoreReadonly: true,
+            });
+    	});
+		
+		$(document).on('blur', '.purchase_unit_cost_without_discount', function(e) {
+			const val = $(this).val();
+			const cost = parseInt($(this).parent().find('.currentcost').html());
+			const total = ((val-cost)/100)*100;
+			const parce = total.toFixed(2) + '% Change <br>';
+			$(this).parent().find('.changepercent').html(parce);
+		});
+		
+		function additionalChargesFun() {
+			var total_subtotal = 0;
+			var total = 0;
+			$('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+	        	total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	        	var suvtotal = quantity * total_quantity;
+				total_subtotal += suvtotal;
+
+	        });
+			const addtional_charges = parseFloat($('#additional_charges').val());
+			const discount_amt = parseFloat($('#discount_amount').val());
+	        if(total_subtotal != 0)
+	        {
+	        	total = total_subtotal + addtional_charges;
+
+	        	if(discount_amt != 0)
+		        {
+		        	total =  total - discount_amt;
+		        }
+				$('#total_subtotal').text(__currency_trans_from_en(total, true, true));
+				__write_number($('input#total_subtotal_input'), total, true);	
+				__write_number($('input#grand_total_hidden'), total, true);	
+				__write_number($('input#shipping_charges'), addtional_charges, true);	
+	        }
+		}
+
+		function additionalChargesRemove()
+		{
+			var total_subtotal = 0;
+			var total = 0;
+
+			$('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+	        	total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	        	var suvtotal = quantity * total_quantity;
+				total_subtotal += suvtotal;	
+	        });
+			const addtional_charges = 0.00;
+	        const discount_amt = parseFloat($('#discount_amount').val());
+	        if(discount_amt != 0)
+	        {
+	        	total =  total_subtotal - discount_amt;
+	        }else{
+	        	total =  total_subtotal;
+	        }
+	        $('#total_subtotal').text(__currency_trans_from_en(total, true, true));
+			__write_number($('input#total_subtotal_input'), total, true);	
+			__write_number($('input#grand_total_hidden'), total, true);	
+			__write_number($('input#shipping_charges'), addtional_charges, true);	 
+			__write_number($('input#additional_charges'), addtional_charges, true);	 
+		}
+
+		function additionalChargesFun_old() {
+		// $(document).on('blur', '#additional_charges', function(e) {
+			// const val = parseFloat($(this).val());
+			const val = parseFloat($('#additional_charges').val());
+			var sub = $("#total_subtotal").html();
+			sub = sub.replace(/\$/g, '');
+			var total = parseFloat(sub);
+			var perc = (val/total)*100;
+			var total_subtotal = 0;
+
+
+			$('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	            var addtional_charges = total_quantity*(perc/100);
+
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+		        var purchase_after_tax = quantity * total_quantity;
+				var suvtotal = purchase_after_tax + addtional_charges;
+				total_subtotal += suvtotal;
+				__write_number($(this).find('.inline_discounts'), addtional_charges, true);
+
+				//custom  changes  //25-05-2021
+				var purchase_unit_cost_amt =  addtional_charges + total_quantity;
+				__write_number($(this).find('.purchase_unit_cost'), purchase_unit_cost_amt, true);
+
+				//Calculate sub totals
+		        var sub_total_after_tax = purchase_after_tax + additional_charges;
+
+				// __write_number($(this).find('.purchase_unit_cost'), suvtotal, true); 
+				//__write_number($(this).find('.row_subtotal_after_tax'), suvtotal, true);
+				//$(this).find('.row_subtotal_after_tax').text(suvtotal);
+				$(this).find('.row_subtotal_after_tax').text(
+					__currency_trans_from_en(suvtotal, false, true)
+				);
+				__write_number(row.find('input.row_subtotal_after_tax_hidden'), sub_total_after_tax, true);
+				// total_st_before_tax += __read_number(
+	            //     $(this).find('.row_subtotal_before_tax_hidden'),
+	            //     true
+	            // );
+				
+	             
+	        });
+
+			//$('#total_quantity').text(__number_f(total_quantity, false));
+			//$('#total_st_before_tax').text(__currency_trans_from_en(total_st_before_tax, true, true));
+			//__write_number($('input#st_before_tax_input'), total_st_before_tax, true);
+
+			// $('#total_subtotal').text(__currency_trans_from_en(total_subtotal, true, true));
+			// __write_number($('input#total_subtotal_input'), total_subtotal, true);
+		// });	
+		}
+
+		function additionalChargesRemove_old()
+		{
+			const val = 0.00;
+			var sub = $("#total_subtotal").html();
+			sub = sub.replace(/\$/g, '');
+			var total = parseFloat(sub);
+			var perc = (val/total)*100;
+			var total_subtotal = 0;
+
+			$('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	            var addtional_charges = total_quantity*(perc/100);
+
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+		        var purchase_after_tax = quantity * total_quantity;
+				var suvtotal = purchase_after_tax + addtional_charges;
+				total_subtotal += suvtotal;
+		        __write_number($(this).find('.purchase_unit_cost'), suvtotal, true); 
+				__write_number($(this).find('.inline_discounts'), addtional_charges, true);
+
+				//Calculate sub totals
+		        var sub_total_after_tax = purchase_after_tax + additional_charges;
+
+				$(this).find('.row_subtotal_after_tax').text(
+					__currency_trans_from_en(suvtotal, false, true)
+				);
+
+				__write_number(row.find('input.row_subtotal_after_tax_hidden'), sub_total_after_tax, true);	
+				$('#additional_charges').val(0.00);          
+	        });
+
+	        $('#discount_show').removeClass('hide');
+	        $('#discount_show').addClass('show');
+		}
+
+		function discountChargesFun() {
+		    var total_subtotal = 0;
+		    var total = 0;
+		    var discount = 0;
+		    $('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+		        var purchase_after_tax = quantity * total_quantity;
+				total_subtotal += purchase_after_tax;
+	        });
+		    $('#total_subtotal').text(__currency_trans_from_en(total_subtotal, true, true));
+		    __write_number($('input#total_subtotal_input'), total_subtotal, true);
+
+
+		    if(total_subtotal != 0)
+		    {
+		    	const addtional_charges = parseFloat($('#additional_charges').val());
+		    	if(addtional_charges)
+		    	{
+		    		total_subtotal = total_subtotal + addtional_charges;
+		    	}
+				var discount = $('#discount_charges').val();
+				
+				
+				if(discount > total_subtotal){
+					toastr.error('Discount Amount should not be greater than net amount');
+					// alert('Discount Amount should not be greater than net amount');
+					$('#total_subtotal').text(__currency_trans_from_en(total_subtotal, true, true));
+					__write_number($('input#total_subtotal_input'), total_subtotal, true);
+					__write_number($('input#grand_total_hidden'), total_subtotal, true); 
+
+					$('#submit_purchase_form').attr("disabled", true);
+
+					$('#total_discount').text(__currency_trans_from_en(0.0000, true, true));
+					__write_number($('input#total_discount_input'), 0.0000, true);
+					__write_number($('input#discount_amount'), 0.0000, true);
+
+				}else{
+					total = total_subtotal - discount;
+					$('#total_subtotal').text(__currency_trans_from_en(total, true, true));
+					__write_number($('input#total_subtotal_input'), total, true);
+					__write_number($('input#grand_total_hidden'), total, true); 
+
+					$('#submit_purchase_form').attr("disabled", false);
+
+					$('#total_discount').text(__currency_trans_from_en(discount, true, true));
+					__write_number($('input#total_discount_input'), discount, true);
+					__write_number($('input#discount_amount'), discount, true);
+				}
+		    }
+		    // $('#discount_show').removeClass('hide');
+	        // $('#discount_show').addClass('show');
+	        
+	   //     $('#total_discount').text(__currency_trans_from_en(discount, true, true));
+		  //  __write_number($('input#total_discount_input'), discount, true);
+		  //  __write_number($('input#discount_amount'), discount, true);
+
+		    // $('#discount_show').removeClass('hide');
+	        // $('#discount_show').addClass('show');
+		    console.log('total_subtotal:', total_subtotal)
+		    console.log('discount:', discount)
+		    console.log('total: ', total)
+
+		}
+
+		function discountChargesRemove() {
+		    var total_subtotal = 0;
+		    var total = 0;
+		    var discount = 0;
+		    $('#purchase_entry_table tbody')
+	        .find('tr')
+	        .each(function() {
+	            total_quantity = __read_number($(this).find('.purchase_unit_cost_without_discount'), true);
+	            var quantity = __read_number($(this).find('.purchase_quantity'), true);
+		        var purchase_after_tax = quantity * total_quantity;
+				total_subtotal += purchase_after_tax;
+	        });
+
+	        const addtional_charges = parseFloat($('#additional_charges').val());
+	    	if(addtional_charges)
+	    	{
+	    		total_subtotal = total_subtotal + addtional_charges;
+	    	}
+
+	    	$('#total_subtotal').text(__currency_trans_from_en(total_subtotal, true, true));
+		    __write_number($('input#total_subtotal_input'), total_subtotal, true);
+		    __write_number($('input#grand_total_hidden'), total_subtotal, true);	
+
+		   	$('#total_discount').text(__currency_trans_from_en(discount, true, true));
+		    __write_number($('input#total_discount_input'), discount, true);
+		    __write_number($('input#discount_amount'), discount, true);
+
+		    $('#discount_charges').val(0.00);
+		    console.log('total_subtotal:', total_subtotal)
+		    console.log('discount:', discount)
+		    console.log('total: ', total)
+		}
+		
+    	$(document).on('change', '.payment_types_dropdown, #location_id', function(e) {
+		    var default_accounts = $('select#location_id').length ? 
+		                $('select#location_id')
+		                .find(':selected')
+		                .data('default_payment_accounts') : [];
+		    var payment_types_dropdown = $('.payment_types_dropdown');
+		    var payment_type = payment_types_dropdown.val();
+		    var payment_row = payment_types_dropdown.closest('.payment_row');
+	        var row_index = payment_row.find('.payment_row_index').val();
+
+	        var account_dropdown = payment_row.find('select#account_' + row_index);
+		    if (payment_type && payment_type != 'advance') {
+		        var default_account = default_accounts && default_accounts[payment_type]['account'] ? 
+		            default_accounts[payment_type]['account'] : '';
+		        if (account_dropdown.length && default_accounts) {
+		            account_dropdown.val(default_account);
+		            account_dropdown.change();
+		        }
+		    }
+
+		    if (payment_type == 'advance') {
+		        if (account_dropdown) {
+		            account_dropdown.prop('disabled', true);
+		            account_dropdown.closest('.form-group').addClass('hide');
+		        }
+		    } else {
+		        if (account_dropdown) {
+		            account_dropdown.prop('disabled', false); 
+		            account_dropdown.closest('.form-group').removeClass('hide');
+		        }    
+		    }
+		});
+
+		$(".modal-dialog").hide();
+		$(document).on("click", ".add_new_supplier", function(){
+			$(".section-div").show();
+			$(".modal-dialog").show();
+		});
+		$(document).on("click", ".close", function(){
+			$(".section-div").hide();
+			$(".modal-dialog").hide();
+		});
+		
+		$('body').on('keydown', 'input, select, textarea', function(e) {
+			var self = $(this)
+			  , form = self.parents('form:eq(0)')
+			  , focusable
+			  , next
+			  , prev
+			  ;
+
+			if (e.shiftKey) {
+				if (e.keyCode == 107) {
+				    focusable =   form.find('input,a,select,button,textarea').filter(':visible');
+				    prev = focusable.eq(focusable.index(this)-1); 
+				    if (prev.length) {
+				        prev.focus();
+				   			console.log('first')
+				    } else {
+				        form.submit();
+				    }
+				}
+			}else{
+				if (e.keyCode == 107) {
+				    focusable = form.find('input,a,select,button,textarea').filter(':visible');
+				    next = focusable.eq(focusable.index(this)+1);
+				    if (next.length) {
+				        var row_id =  $(this).data("row");
+				        var row_input =  $(this).data("input");
+				        var i =  row_input+1;
+				        if(row_input == 5)
+				        {	
+				        	var j = row_id +1;
+				        	var next_row = $('#input_'+j+'_box'+1).val();
+				        	if(next_row)
+				        	{
+				        		document.getElementById('input_'+j+'_box'+1).focus();
+				        	}else{
+					        	document.getElementById('search_product_two').focus();
+				        	}
+				        }else{
+				        	document.getElementById('input_'+row_id+'_box'+i).focus();
+				        }
+				    } else {
+				        form.submit();
+				    }
+				    return false;
+				}
+			}
+		});
+
+		$(document).ready(function() {
+		  	$(".add").click(function() {
+		    	$('<div><br><input class="files" name="documents[]" type="file" accept="application/pdf,text/csv,application/zip,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/jpg,image/png" ><span class="rem" ><a href="javascript:void(0);" title="Clear selected files" class="deleteDoc btn btn-danger btn-xs fileinput-remove fileinput-remove-button"><i class="glyphicon glyphicon-trash"></i>  <span class="hidden-xs">Remove</span></span></div>').appendTo(".contents");
+		    });
+			$('.contents').on('click', '.rem', function() {
+			    $(this).parent("div").remove();
+			});
+		});
+		
+		$(document).ready(function() {
+			$(window).keydown(function(event){
+			    if(event.keyCode == 13) {
+			      event.preventDefault();
+			      return false;
+			    }
+			});
+		});
+		
+			$(document).on('change', '#ref_no', function() {
+			var ref_no = $("#ref_no").val();
+        	var supplier_id = $("#supplier_id").val();
+	        if(ref_no == ''){
+				$(".error").text('');
+			}
+            $.ajax({
+                method: 'POST',
+                url: '/purchases/check_ref_number',
+                dataType: 'json',
+                data: {
+                    ref_no:ref_no,
+                    supplier_id:supplier_id
+					 },
+				success: function(success) {
+					console.log(success);
+                if(success.success == true){
+                    $("#submit_purchase_form").prop("disabled", true);
+                    $(".error").text(success.message);
+                }else{
+                    $("#submit_purchase_form").prop("disabled", false);
+                    $(".error").text(success.message);
+                }   
+             },
+            });
+        });
+	</script>
+	@include('purchase.partials.keyboard_shortcuts')
+@endsection

@@ -1,0 +1,296 @@
+    .model-header-new
+    {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 1px solid #dadfe5;
+    border-top-left-radius: calc(8px - 1px);
+    border-top-right-radius:  calc(8px - 1px);
+    }
+     .model-footer-new
+    {
+    padding-top: 3px;
+    padding-bottom: 3px;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    padding: calc(1.5rem - (0.75rem * 0.5));
+    background-color: #fcfdfe;
+    border-top: 1px solid #dadfe5;
+    border-bottom-left-radius: calc(8px - 1px);
+    border-bottom-right-radius:  calc(8px - 1px);
+    box-sizing: border-box;
+    margin: calc((0.75rem) * .5);
+    }
+    .modal.fade .modal-dialog {
+    transition: transform .3s ease-out;
+    }
+    .fade {
+        transition: opacity .15s linear;
+    }
+    
+  .form-imagecheck {
+    position: relative;
+    margin: 0;
+    cursor: pointer
+    }
+    
+    .form-imagecheck-input {
+        position: absolute;
+        z-index: -1;
+        opacity: 0
+    }
+    
+    .form-imagecheck-figure {
+        position: relative;
+        display: block;
+        margin: 0;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        border: 1px solid #dadfe5;
+        border-radius: 3px
+    }
+    
+    .form-imagecheck-input:focus~.form-imagecheck-figure {
+        border-color: #206bc4;
+        box-shadow: 0 0 0 .25rem rgba(32,107,196,.25)
+    }
+    
+    .form-imagecheck-input:checked~.form-imagecheck-figure {
+        border-color: #206bc4;
+    }
+    
+    .form-imagecheck-figure:before {
+        position: absolute;
+        top: .25rem;
+        left: .25rem;
+        z-index: 1;
+        display: block;
+        width: 1rem;
+        height: 1rem;
+        color: #fff;
+        pointer-events: none;
+        content: "";
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        background: #fff;
+        border: 1px solid #dadfe5;
+        border-radius: 4px;
+        transition: opacity .3s;
+    }
+    
+    @media (prefers-reduced-motion:reduce) {
+        .form-imagecheck-figure:before {
+            transition: none;
+        }
+    }
+    
+    .form-imagecheck-input:checked~.form-imagecheck-figure:before {
+        background-color: #206bc4;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' width='16' height='16'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 8.5l2.5 2.5l5.5 -5.5'/%3e%3c/svg%3e");
+        background-repeat: repeat;
+        background-position: center;
+        background-size: 1rem;
+        border-color: rgba(4, 32, 69, 0.14);
+    }
+    
+    .form-imagecheck-input[type=radio]~.form-imagecheck-figure:before {
+        border-radius: 50%;
+    }
+    
+    .form-imagecheck-input[type=radio]:checked~.form-imagecheck-figure:before {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3ccircle r='3' fill='%23ffffff' cx='8' cy='8' /%3e%3c/svg%3e")
+    }
+    
+    .form-imagecheck-image {
+        max-width: 100%;
+        display: block;
+        opacity: .64;
+        transition: opacity .3s;
+    }
+    
+    @media (prefers-reduced-motion:reduce) {
+        .form-imagecheck-image {
+            transition: none;
+        }
+    }
+    
+    .form-imagecheck-image:first-child {
+        border-top-left-radius: 2px;
+        border-top-right-radius: 2px;
+    }
+    
+    .form-imagecheck-image:last-child {
+        border-bottom-right-radius: 2px;
+        border-bottom-left-radius: 2px;
+    }
+    
+    .form-imagecheck-input:checked~.form-imagecheck-figure .form-imagecheck-image,.form-imagecheck-input:focus~.form-imagecheck-figure .form-imagecheck-image,.form-imagecheck:hover .form-imagecheck-image {
+        opacity: 1;
+    }
+    
+    .form-imagecheck-caption {
+        padding: .25rem;
+        font-size: .765625rem;
+        color: #667382;
+        text-align: center;
+        transition: color .3s;
+    }
+    
+    @media (prefers-reduced-motion:reduce) {
+        .form-imagecheck-caption {
+            transition: none;
+        }
+    }
+    
+    .form-imagecheck-input:checked~.form-imagecheck-figure .form-imagecheck-caption,.form-imagecheck-input:focus~.form-imagecheck-figure .form-imagecheck-caption,.form-imagecheck:hover .form-imagecheck-caption {
+        color: #182433;
+    }
+    .btn-secondary-new{border-color:transparent;color:#fcfdfe;background-color:#667382;margin: calc((0.75rem) * .5);}.btn-secondary-new:hover{color:#fcfdfe;background-color:rgba(102,115,130,.8);border-color:transparent;}.btn-secondary-new:active{color:#fcfdfe;background-color:rgba(102,115,130,.8);border-color:transparent;}.btn-secondary-new:disabled{background-color:#667382;color:#fcfdfe;box-shadow:0 1px 0 rgba(24,36,51,.04),inset 0 -1px 0 rgba(24,36,51,.2);}
+    .btn-primary-new{border-color:transparent;color:#fcfdfe;background-color:#206bc4;margin: calc((0.75rem) * .5);}.btn-primary-new:hover{color:#fcfdfe;background-color:rgba(32,107,196,.8);border-color:transparent;}.btn-primary-new:active{color:#fcfdfe;background-color:rgba(32,107,196,.8);border-color:transparent;}.btn-primary-new:disabled{background-color:#206bc4;color:#fcfdfe;box-shadow:0 1px 0 rgba(24,36,51,.04),inset 0 -1px 0 rgba(24,36,51,.2);}
+
+    
+    @keyframes sge-spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .thelegend {
+        --m3c3: #1f1f1f;
+        --m3c18: #277eff;
+        --m3c19: #27f1ff;
+        --m3c20: #f393d9;
+        --m3c21: #ffbaec;
+    }
+    .button-text {
+            position: relative;
+            z-index: 2; 
+        }
+    .gradient-button {
+        max-width: 110px; /* Match the old button width */
+        max-height: 50px; /* Match the old button height */
+        border-radius: 30px; /* Match the old button border-radius */
+        font-size: smaller; /* Adjust font size if needed */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        border: 1px solid transparent;
+        cursor: pointer;
+        outline: none;
+        background: none;
+        font-weight: 500;
+        color: var(--m3c3);
+        z-index: 1;
+        padding: 10px 30px;
+        font-family: Google Sans, Roboto, Helvetica Neue, Arial, sans-serif;
+        overflow-y: auto;
+        transition: background-color 2s ease;
+    }
+
+    .gradient-button::before {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 333%;
+        top: -100%;
+        z-index: 0;
+        left: 0;
+        background: radial-gradient(farthest-corner at bottom left, var(--m3c21), transparent),
+                    radial-gradient(farthest-corner at top left, var(--m3c19), transparent),
+                    radial-gradient(farthest-side at top right, var(--m3c18), transparent),
+                    radial-gradient(farthest-corner at bottom right, var(--m3c20), transparent);
+        animation: sge-spin 4s linear infinite;
+        transition: background 2s ease;
+    }
+
+    .gradient-button:hover::before {
+        background: radial-gradient(closest-side at center, rgba(255, 255, 255, 0.015) 30%, rgba(255, 255, 255, 0.085) 60%, rgba(255, 255, 255, 0.1) 90%, rgba(255, 255, 255, 0.1) 100%),
+                    radial-gradient(farthest-corner at bottom left, var(--m3c21), transparent),
+                    radial-gradient(farthest-corner at top left, var(--m3c19), transparent),
+                    radial-gradient(farthest-side at top right, var(--m3c18), transparent),
+                    radial-gradient(farthest-corner at bottom right, var(--m3c20), transparent);
+    }
+
+  /* Style for the modal */
+  .magicsnapModal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow-y: hidden;
+    background-color: rgba(0,0,0,0.8);
+  }
+  
+  /* Style for the modal content */
+  .magicsnapModal-content {
+    margin: 10% auto;
+    padding: 20px;
+    background-color: #fefefe;
+    border: 1px solid #888;
+    width: 90%; /* Adjust the width as needed */
+    max-width: max-content; /* Maximum width of the modal */
+    height: auto; /* Let the height adjust based on content */
+    max-height: max-content; /* Maximum height of the modal */
+    border-radius: 5px;
+            overflow-y:hidden !important;
+  }
+  
+  /* Style for the image */
+  #preview-image-modal {
+    width: auto; /* Auto width */
+    height: 400px; /* Fixed height */
+    object-fit: contain;/* Maintain aspect ratio and fit within the container */
+  }
+  
+  .magicsnap-remove-button {
+      background: linear-gradient(to right, #ff7e5f, #feb47b); /* Light red color gradient */
+      color: #fff; /* White text color */
+      padding: 5px 15px; /* Reduced padding */
+      border-radius: 15px; /* Rounded border */
+      border: none; /* No border */
+      cursor: pointer; /* Cursor style */
+      transition: all 0.3s ease; /* Smooth transition */
+      font-size: 12px; /* Reduced font size */
+    }
+
+    
+    /* Hover effect */
+    .magicsnap-remove-button:hover {
+      background: linear-gradient(to right, #ff7e5f, #ff7e5f); /* Darker shade of red */
+      transform: scale(1.1); /* Scale the button slightly */
+    }
+    
+    
+    .magicsnap-preview-button {
+      background: linear-gradient(to right, #8a4fff, #c964ff), #debbfd; /* Purple and white gradient with #debbfd background */
+      color: #fff; /* White text color */
+      padding: 5px 15px; /* Reduced padding */
+      border-radius: 15px; /* Rounded border */
+      border: none; /* No border */
+      cursor: pointer; /* Cursor style */
+      transition: all 0.3s ease; /* Smooth transition */
+      font-size: 12px; /* Reduced font size */
+    }
+
+    /* Hover effect */
+    .magicsnap-preview-button:hover {
+      background: linear-gradient(to right, #8a4fff, #8a4fff); /* Darker shade of purple */
+      transform: scale(1.1); /* Scale the button slightly */
+    }
+

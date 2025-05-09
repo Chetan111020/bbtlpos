@@ -1,0 +1,251 @@
+<div class="modal-dialog modal-xl" role="document">
+	<div class="modal-content">
+		<div class="modal-header">
+		    <button type="button" class="close no-print" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+		      <h4 class="modal-title" id="modalTitle">{{$product->name}}</h4>
+		</div>
+	    <div class="modal-body">
+      		<div class="row">
+      			<div class="col-sm-9">
+	      			<div class="col-sm-4 invoice-col">
+	      				<b>@lang('product.sku'):</b>
+						{{$product->sku }}<br>
+						<b>@lang('On Hand'):</b>
+						{{ round($qty) }}<br>
+						<b>@lang('Case QTY'):</b>
+						{{ round($product->case_qty) }}<br>
+						<b>@lang('product.brand'): </b>
+						{{$product->brand->name ?? '--' }}<br>
+						<b>@lang('product.unit'): </b>
+						{{$product->unit->short_name ?? '--' }}<br>
+						<b>@lang('product.barcode_type'): </b>
+						{{$product->barcode_type ?? '--' }}<br>
+						<b>@lang('product.aisle'): </b>
+						{{$product->aisle ?? '--' }}<br>
+						<b>@lang('product.rack'): </b>
+						{{$product->rack ?? '--' }}<br>
+						<b>@lang('product.aisle'): </b>
+						{{$product->shelf ?? '--' }}<br>
+						<b>@lang('product.bin'): </b>
+						{{$product->bin ?? '--' }}
+						@php 
+    						$custom_labels = json_decode(session('business.custom_labels'), true);
+						@endphp
+						@if(!empty($product->product_custom_field1))
+							<!--<br/>-->
+							<!--<b>{{ $custom_labels['product']['custom_field_1'] ?? __('lang_v1.product_custom_field1') }}: </b>-->
+							<!--{{$product->product_custom_field1 }}-->
+						@endif
+
+						@if(!empty($product->product_custom_field2))
+							<br/>
+							<b>{{ $custom_labels['product']['custom_field_2'] ?? __('lang_v1.product_custom_field2') }}: </b>
+							{{$product->product_custom_field2 }}
+						@endif
+
+						@if(!empty($product->product_custom_field3))
+							<br/>
+							<b>{{ $custom_labels['product']['custom_field_3'] ?? __('lang_v1.product_custom_field3') }}: </b>
+							{{$product->product_custom_field3 }}
+						@endif
+
+						@if(!empty($product->product_custom_field4))
+							<br/>
+							<b>{{ $custom_labels['product']['custom_field_4'] ?? __('lang_v1.product_custom_field4') }}: </b>
+							{{$product->product_custom_field4 }}
+						@endif
+						<br>
+						{{-- <strong>@lang('lang_v1.available_in_locations'):</strong>
+						@if(count($product->product_locations) > 0)
+							{{implode(', ', $product->product_locations->pluck('name')->toArray())}}
+						@else
+							@lang('lang_v1.none')
+						@endif --}}
+	      			</div>
+
+	      			<div class="col-sm-4 invoice-col">
+						<b>@lang('product.category'): </b>
+						{{$product->category->name ?? '--' }}<br>
+						<b>@lang('product.sub_category'): </b>
+						{{$product->sub_category->name ?? '--' }}<br>	
+						
+						<b>@lang('product.manage_stock'): </b>
+						@if($product->enable_stock)
+							@lang('messages.yes')
+						@else
+							@lang('messages.no')
+						@endif
+						<br>
+						@if($product->enable_stock)
+							<b>@lang('product.alert_quantity'): </b>
+							{{ number_format($product->alert_quantity, 2) ?? '--' }}<br>
+							<b>@lang('lang_v1.srp'): </b>
+							{{$product->srp ?? '--' }}<br>
+							<b>@lang('lang_v1.sp'): </b>
+							{{$product->sp ?? '--' }}<br>
+							<b>@lang('lang_v1.wght'): </b>
+							{{$product->wght ?? '--' }}
+						@endif
+
+						@if(!empty($product->warranty))
+							<br>
+							<b>@lang('lang_v1.warranty'): </b>
+							{{$product->warranty->display_name }}
+						@endif
+	      			</div>
+					
+	      			<div class="col-sm-4 invoice-col">
+	      				<b>@lang('product.expires_in'): </b>
+	      				@php
+	  						$expiry_array = ['months'=>__('product.months'), 'days'=>__('product.days'), '' =>__('product.not_applicable') ];
+	  					@endphp
+	      				@if(!empty($product->expiry_period) && !empty($product->expiry_period_type))
+							{{$product->expiry_period}} {{$expiry_array[$product->expiry_period_type]}}
+						@else
+							{{$expiry_array['']}}
+	      				@endif
+	      				<br>
+						@if($product->weight)
+							<b>@lang('lang_v1.weight'): </b>
+							{{$product->weight }}<br>
+						@endif
+						<b>@lang('product.applicable_tax'): </b>
+						{{$product->product_tax->name ?? __('lang_v1.none') }}<br>
+						@php
+							$tax_type = ['inclusive' => __('product.inclusive'), 'exclusive' => __('product.exclusive')];
+						@endphp
+						<b>@lang('product.selling_price_tax_type'): </b>
+						{{$tax_type[$product->tax_type]  }}<br>
+						<b>@lang('product.product_type'): </b>
+						@lang('lang_v1.' . $product->type)
+						
+	      			</div>
+	      			<div class="clearfix"></div>
+	      			<br>
+      				<div class="col-sm-12">
+      					{!! $product->product_description !!}
+      				</div>
+	      		</div>
+      			<div class="col-sm-3 col-md-3 invoice-col">
+      				<div class="thumbnail">
+      					<img src="{{asset('/uploads'.$product->main_image)}}" style="height:200px !important;" alt="Product image">
+      				</div>
+      			</div>
+      		</div>
+      		@if($rack_details->count())
+      		@if(session('business.enable_racks') || session('business.enable_row') || session('business.enable_position'))
+      			<div class="row">
+      				<div class="col-md-12">
+      					<h4>@lang('lang_v1.rack_details'):</h4>
+      				</div>
+      				<div class="col-md-12">
+      					<div class="table-responsive">
+      					<table class="table table-condensed bg-gray">
+      						<tr class="bg-green">
+      							<th>@lang('business.location')</th>
+      							@if(session('business.enable_racks'))
+      								<th>@lang('lang_v1.rack')</th>
+      							@endif
+      							@if(session('business.enable_row'))
+      								<th>@lang('lang_v1.row')</th>
+      							@endif
+      							@if(session('business.enable_position'))
+      								<th>@lang('lang_v1.position')</th>
+      							@endif
+      							</tr>
+      						@foreach($rack_details as $rd)
+      							<tr>
+	      							<td>{{$rd->name}}</td>
+	      							@if(session('business.enable_racks'))
+	      								<td>{{$rd->rack}}</td>
+	      							@endif
+	      							@if(session('business.enable_row'))
+	      								<td>{{$rd->row}}</td>
+	      							@endif
+	      							@if(session('business.enable_position'))
+	      								<td>{{$rd->position}}</td>
+	      							@endif
+      							</tr>
+      						@endforeach
+      					</table>
+      					</div>
+      				</div>
+      			</div>
+      		@endif
+      		@endif
+      		@if($product->type == 'single')
+      			@include('product.partials.single_product_details')
+      		@elseif($product->type == 'variable')
+      			@include('product.partials.variable_product_details')
+      		@elseif($product->type == 'combo')
+      			@include('product.partials.combo_product_details')
+      		@endif
+      		@if($product->enable_stock == 1)
+	      		<div class="row">
+	      			<div class="col-md-12">
+	      				<strong>@lang('lang_v1.product_stock_details')</strong>
+	      			</div>
+	      			<div class="col-md-12" id="view_product_stock_details" data-product_id="{{$product->id}}">
+	      			</div>
+	      		</div>
+      		@endif
+      		<div class="row">
+				<div class="col-md-12">
+					<strong>Product Log Detail</strong>
+				</div>
+				<div class="col-md-12">
+					<table class="table table-condensed bg-gray">
+      						<tr class="bg-green">
+								<th>User Name</th>
+								<th>Action</th>
+								<th>Message</th>
+								<th>Date And Time</th>
+							</tr>
+							@foreach($productlog as $log)
+							<tr>
+								<td>{{$log->first_name}}</td>
+								@if($log->description == 'added')
+									<td>Added</td>
+								@elseif($log->description == 'edited')
+									<td>Edited</td>
+								@endif
+								<!--<td>{{$log->message}}</td>-->
+								@php $str_array = explode(',',$log->message); @endphp
+                                <td>
+                                    @foreach ($str_array as $message)
+                                        @if ($message != '')
+                                            # {{ $message }}<br>
+                                        @endif
+                                    @endforeach
+                                </td>
+								<td> {{ Carbon\Carbon::parse($log->datetime)->format('m/d/Y H:i A') }}</td>
+							</tr>
+							@endforeach
+					</table>
+				</div>
+			</div>
+      	</div>
+      	<div class="modal-footer">
+      		<button type="button" class="btn btn-primary no-print" 
+	        aria-label="Print" 
+	          onclick="$(this).closest('div.modal').printThis();">
+	        <i class="fa fa-print"></i> @lang( 'messages.print' )
+	      </button>
+	      	<button type="button" class="btn btn-default no-print" data-dismiss="modal">@lang( 'messages.close' )</button>
+	    </div>
+	</div>
+</div>
+
+<script>	
+	$("#toggle").click(function() {	
+		$("#text").slideToggle(800);	
+		$(this).toggleClass("show");	
+		if($("#toggle").hasClass('show')){	
+			$('#icon').removeClass('fa fa-caret-down');	
+			$('#icon').addClass('fa fa-caret-up');	
+		}else{	
+			$('#icon').removeClass('fa fa-caret-up');	
+			$('#icon').addClass('fa fa-caret-down');	
+		}		
+	});	
+</script>

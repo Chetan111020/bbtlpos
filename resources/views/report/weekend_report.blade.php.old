@@ -1,0 +1,197 @@
+@extends('layouts.app')
+@section('title', __( 'End of the Week Report' ))
+
+@section('content')
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>@lang( 'Weekend Report' )
+    </h1>
+</section>
+
+<!-- Main content -->
+<section class="content">
+    <div class="row">
+        <div class="col-md-12">
+           <div class="form-group pull-right">
+                <div class="col-md-8">
+                    <input type="hidden" id="date" name="date" value="">
+                    <div class="form-group">
+                        {!! Form::label('all_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('all_date_filter', @format_date('first day of this week') . ' ~ ' . @format_date('last day of this week'), ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'id' => 'all_date_filter', 'readonly']); !!}
+
+                        {{-- {!! Form::label('all_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('all_date_filter', null, ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'readonly']); !!} --}}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <button class="btn btn-primary" id="submitData" >Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row row-custom">
+            
+        	<div class="col-md-4 col-sm-6 col-xs-12 col-custom">
+    	      <div class="info-box info-box-new-style">
+    	        <span class="info-box-icon bg-yellow">
+    	        	<i class="ion ion-ios-paper-outline"></i>
+    	        	<i class="fa fa-exclamation"></i>
+    	        </span>
+
+    	        <div class="info-box-content">
+    	          <span class="info-box-text">{{ __('Vendor Bill') }}</span>
+    	          <span class="info-box-number purchase_due"><i class="fas fa-sync fa-spin fa-fw margin-bottom"></i></span>
+    	        </div>
+    	        <!-- /.info-box-content -->
+    	      </div>
+    	      <!-- /.info-box -->
+    	    </div>
+    	    <!-- /.col -->
+    	    <div class="col-md-4 col-sm-6 col-xs-12 col-custom">
+    	      <div class="info-box info-box-new-style">
+    	        <span class="info-box-icon bg-aqua"><i class="ion ion-ios-cart-outline"></i></span>
+
+    	        <div class="info-box-content">
+    	          <span class="info-box-text">{{ __('Payment To Vendor') }}</span>
+    	          <span class="info-box-number vendor_payment"><i class="fas fa-sync fa-spin fa-fw margin-bottom"></i></span>
+    	        </div>
+    	        <!-- /.info-box-content -->
+    	      </div>
+    	      <!-- /.info-box -->
+    	    </div>
+    	    <!-- /.col -->
+    	    <div class="col-md-4 col-sm-6 col-xs-12 col-custom">
+    	      <div class="info-box info-box-new-style">
+    	        <span class="info-box-icon bg-aqua"><i class="ion ion-cash"></i></span>
+
+    	        <div class="info-box-content">
+    	          <span class="info-box-text">{{ __('Purchase Order') }}</span>
+    	          <span class="info-box-number purchase_order"><i class="fas fa-sync fa-spin fa-fw margin-bottom"></i></span>
+    	        </div>
+    	        <!-- /.info-box-content -->
+    	      </div>
+    	      <!-- /.info-box -->
+    	    </div>
+    	    <!-- /.col -->
+            <div class="col-md-2"></div>
+    	    <!-- fix for small devices only -->
+    	    <!-- <div class="clearfix visible-sm-block"></div> -->
+    	    <div class="col-md-4 col-sm-6 col-xs-12 col-custom">
+    	      <div class="info-box info-box-new-style">
+    	        <span class="info-box-icon bg-aqua"><i class="ion ion-ios-cart-outline"></i></span>
+
+    	        <div class="info-box-content">
+    	          <span class="info-box-text">{{ __('Sales Order') }}</span>
+    	          <span class="info-box-number sale_data"><i class="fas fa-sync fa-spin fa-fw margin-bottom"></i></span>
+    	        </div>
+    	        <!-- /.info-box-content -->
+    	      </div>
+    	      <!-- /.info-box -->
+    	    </div>
+    	    <!-- /.col -->
+    	    <div class="col-md-4 col-sm-6 col-xs-12 col-custom">
+    	      <div class="info-box info-box-new-style">
+    	        <span class="info-box-icon bg-yellow">
+    	        	<i class="fa fa-dollar"></i>
+    				<i class="fa fa-exclamation"></i>
+    	        </span>
+
+    	        <div class="info-box-content">
+    	          <span class="info-box-text">{{ __('Gross Profit') }}</span>
+    	          <span class="info-box-number gp"><i class="fas fa-sync fa-spin fa-fw margin-bottom"></i></span>
+    	        </div>
+    	        <!-- /.info-box-content -->
+    	      </div>
+    	      <!-- /.info-box -->
+    	    </div>
+    	    <div class="col-md-2"></div>
+    	    
+      	</div>
+</section>
+<!-- /.content -->
+<!--<div class="modal fade view_register" tabindex="-1" role="dialog" -->
+<!--    aria-labelledby="gridSystemModalLabel">-->
+<!--</div>-->
+
+@endsection
+
+@section('javascript')
+    <!--<script src="{{ asset('js/report.js?v=' . $asset_v) }}"></script>-->
+    <!--<script src="{{ asset('js/payment.js?v=' . $asset_v) }}"></script>-->
+    <script type="text/javascript">
+        var start,end;
+    
+        $(document).ready( function(e) {
+            
+            $('#all_date_filter').daterangepicker({
+                ranges: ranges,
+                autoUpdateInput: true,
+                startDate: moment().startOf('week'),
+                endDate: moment().endOf('week'),
+                locale: {
+                    format: moment_date_format
+                }
+            });
+            $('#all_date_filter').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format(moment_date_format) + ' ~ ' + picker.endDate.format(moment_date_format));
+                    $("#date").val($(this).val());
+               
+            }); 
+    
+            $('#all_date_filter').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+            getReportdata();
+        });
+        
+        $(document).on('click', 'button#submitData', function(e) {
+            e.preventDefault();
+            getReportdata();
+        });
+        
+        
+        function getReportdata(){
+            
+            var loader = '<i class="fas fa-sync fa-spin fa-fw margin-bottom"></i>';
+            $('.vendor_payment').html(loader);
+            $('.purchase_due').html(loader);
+            $('.purchase_order').html(loader);
+            $('.sale_data').html(loader);
+            $('.gp').html(loader);
+            
+            var div = $('<div/>')
+                .addClass('loading')
+                .text('Loading...');
+            
+            if($('input#all_date_filter').val()) {
+                start = $('input#all_date_filter').data('daterangepicker').startDate.format('YYYY-MM-DD');
+                end = $('input#all_date_filter').data('daterangepicker').endDate.format('YYYY-MM-DD');
+            }
+            
+            $.ajax({
+                url: '/reports/weekend-report',
+                method: 'GET',
+                data: { 
+                    start_date: start,
+                    end_date: end,
+                },
+                dataType: 'json',
+                success: function(data) {
+                    div.removeClass('loading');
+                    
+                    $('.purchase_due').html(__currency_trans_from_en(data.purchase_due, true));
+                    $('.vendor_payment').html(__currency_trans_from_en(data.vendor_payment, true));
+                    $('.purchase_order').html(__currency_trans_from_en(data.purchase_order, true));
+                    $('.sale_data').html(__currency_trans_from_en(data.sale_data, true));
+                    $('.gp').html(__currency_trans_from_en(data.gp, true)+ ' %');
+                    
+                    __currency_convert_recursively(div);
+                },
+            });
+            return div;
+        }
+    </script>
+@endsection

@@ -1,0 +1,163 @@
+@extends('layouts.app')
+@section('title', __( 'Category Wise Sale Report' ))
+
+@section('content')
+
+<!-- Content Header (Page header) -->
+<section class="content-header">
+    <h1>@lang( 'Category Wise Sale Report' )
+    </h1>
+</section>
+
+<!-- Main content -->
+<section class="content">
+    <div class="row no-print">
+        <div class="col-md-12">
+            <div class="form-group pull-right">
+                <div class="col-md-8">
+                    <input type="hidden" id="date" name="date" value="">
+                    <div class="form-group">
+                        {!! Form::label('category_list_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('category_list_date_filter', @format_date('first day of this month') . ' ~ ' . @format_date('last day of this month'), ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'id' => 'category_list_date_filter', 'readonly']); !!}
+
+                        {{-- {!! Form::label('category_list_date_filter', __('report.date_range') . ':') !!}
+                        {!! Form::text('category_list_date_filter', null, ['placeholder' => __('lang_v1.select_a_date_range'), 'class' => 'form-control', 'readonly']); !!} --}}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <button class="btn btn-primary" id="getdata"  style="margin-top: 24px;">Submit</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<div id="category-table" style="display: none" >
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped" style="width: 100%" id="category_wise_sale">
+            <thead>
+                <tr>
+                    <td>Category</td>
+                    <td>Sale Total</td>
+                    <td>Sale Percentage</td>
+                    <td>Inventory</td>
+                    <td>Inventory Percentage</td>
+                    <td>Difference</td>
+                </tr>
+            </thead>
+            <tfoot>
+                <td><strong>Total:</strong></td>
+                <td class="display_currency footer_sale_total" data-currency_symbol ="true"></td>
+                <td class="footer_sale_percent"></td>
+                <td class="display_currency footer_invent_total" data-currency_symbol ="true">></td>
+                <td class="footer_invent_percent"></td>
+                <td>0</td>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+</section>
+<!-- /.content -->
+@stop
+@section('javascript')
+<script src="{{ asset('js/report.js?v=' . $asset_v) }}"></script>
+
+<script type="text/javascript">
+
+    $(document).ready( function() {
+        $('#category_list_date_filter').daterangepicker({
+                ranges: ranges,
+                autoUpdateInput: false,
+                startDate: moment().startOf('month'),
+                endDate: moment().endOf('month'),
+                locale: {
+                    format: moment_date_format
+                }
+            });
+            $('#category_list_date_filter').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format(moment_date_format) + ' ~ ' + picker.endDate.format(moment_date_format));
+                    $("#date").val($(this).val());
+                 console.log($(this).val());
+                // category_wise.ajax.reload();
+                // category_wise.ajax.reload();
+            }); 
+
+            $('#category_list_date_filter').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+                category_wise.ajax.reload();
+                category_wise.ajax.reload();
+            });
+
+
+            category_wise =  $('#category_wise_sale').DataTable({
+            processing: true,
+            serverSide: true,
+            "ajax": {
+                "url": "/reports/category-wise-sale-report",
+                "data": function ( d ) {
+                    if($('#category_list_date_filter').val()) {
+                        var start = $('input#category_list_date_filter').data('daterangepicker').startDate.format('YYYY-MM-DD');
+                        // console.log(start);
+                        var end = $('input#category_list_date_filter').data('daterangepicker').endDate.format('YYYY-MM-DD');
+                        d.start_date = start;
+                        d.end_date = end;
+                        
+            }
+                }
+            },
+            columns: [
+                { data: 'category_name', name: 'category_name'  },
+                { data: 'total_sold_price', "searchable": false},
+                { data: 'sale_percentage', "searchable": false},
+                { data: 'total_stock_price',"searchable": false},
+                { data: 'inventory_percentage',"searchable": false},
+                { data: 'difference',"searchable": false},
+                
+            ],
+            fnDrawCallback: function(oSettings) {
+                var total_sale = sum_table_col($('#category_wise_sale'), 'total_sale');
+                $('#category_wise_sale .footer_sale_total').text(total_sale);
+
+                var total_percent = sum_table_col($('#category_wise_sale'), 'total-sale-percent');
+                var percentage_sale = total_percent +'%';
+                $('#category_wise_sale .footer_sale_percent').text(percentage_sale);
+
+                var total_sale = sum_table_col($('#category_wise_sale'), 'total_inventory');
+                $('#category_wise_sale .footer_invent_total').text(total_sale);
+
+                var total_percent = sum_table_col($('#category_wise_sale'), 'total-inventory-percent');
+                var percentage_sale = total_percent +'%';
+                $('#category_wise_sale .footer_invent_percent').text(percentage_sale);
+
+                __currency_convert_recursively($('#category_wise_sale'));
+            },
+        });
+    
+    });
+
+
+    
+
+$("#getdata").on('click',function(){
+    $("#category-table").removeAttr("style");
+    category_wise.ajax.reload();
+
+    // var date = $("#date").val();
+
+    // console.log(date.slice(0, date.lastIndexOf(' ') + 1));
+
+    // var end_date = date.substring(date.indexOf('~') + 1);
+    // var start_date = date.substring(date.indexOf('~') - 1)
+
+    
+        
+});
+    // $(document).ready( function() {
+
+    
+    // });
+</script>
+
+@endsection

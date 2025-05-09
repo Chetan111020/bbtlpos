@@ -1,0 +1,380 @@
+@extends('layouts.app')
+@section('title', __('lang_v1.sell_return'))
+
+@section('content')
+
+    <!-- Content Header (Page header) -->
+    <section class="content-header no-print">
+        <h1>@lang('Credit Memos')</h1>
+
+    </section>
+
+    <!-- Main content -->
+    <section class="content no-print">
+
+        {{--{!! Form::hidden('location_id', $sell->location->id, ['id' => 'location_id', 'data-receipt_printer_type' => $sell->location->receipt_printer_type ]); !!}--}}
+        <input type="hidden" name="location_id" value="@if($sell != null){{$sell->location->id}}@endif" id="location_id"
+               data-receipt_printer_type="@if($sell != null){{$sell->location->receipt_printer_type}}@endif">
+        {!! Form::open(['url' => action('SellReturnController@store'), 'method' => 'post', 'id' => 'sell_return_form' ]) !!}
+        {{--	{!! Form::hidden('transaction_id', $sell->id); !!}--}}
+        {{--<input type="hidden" name="transaction_id" id="transaction_id" value="@if($sell != null){{$sell->id}}@endif">--}}
+        <div class="box box-solid">
+        <!-- <div class="box-header">
+			<h3 class="box-title">@lang('lang_v1.parent_sale')</h3>
+		</div> -->
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label for="customer_name">Customer Name.:</label>
+                            {!! Form::select('customer_name',$customers, $contact ?? 0, ['id' =>'getCustomer','class' => 'form-control select2','placeholder' => 'Please Select']); !!}
+                            {{--<input class="form-control" name="customer_name" type="text" id="customer_name">--}}
+                        </div>
+                    </div>
+                    <div class="col-sm-4" style="display: none;">
+                        <div class="form-group">
+                            <label for="invoice_no">Invoice No.:</label>
+                            <input class="form-control" name="invoice_no" type="text" id="invoice_no">
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label for="transaction_date">Date:*</label>
+                            <div class="input-group">
+							<span class="input-group-addon">
+								<i class="fa fa-calendar"></i>
+							</span>
+                                <input class="form-control" readonly="" required="" name="transaction_date" type="text"
+                                       value="{{date('m/d/Y h:i:s a', time())}}" id="transaction_date" aria-required="true">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-group">
+                            <br>
+                            <label>
+                                {!! Form::checkbox('nfs_items', 1, false,
+                                [ 'class' => 'input-icheck', 'id' => 'nfs_items']); !!} Search Inactive
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-4" style="display: none;">
+                        <strong>@lang('sale.invoice_no'):</strong> <span class="invoice_no"></span><br>
+                        <strong>@lang('messages.date')
+                            :</strong> <span class="invoice_date"></span>
+                    </div>
+                    <div class="col-sm-4">
+                        <strong>@lang('contact.customer'):</strong> <span class="customer_name"></span>
+                        <br>
+                        <strong>Sales Rep:</strong> <span class="sales_rep"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" id="product_row_count" value="0">
+        <input type="hidden" name="sell_quantity" id="sell_quantity" value="">
+        <div class="box box-solid">
+            <div class="box-body">
+                <div class="row">
+                    <div class="col-sm-8 col-md-offset-2">
+                        <div class="form-group">
+                            {{--                        <!-- {!! Form::label('invoice_no', __('sale.invoice_no').':') !!} -->--}}
+                            {!! Form::text('search_key',null, ['id' =>'search_sell_return','class' => 'form-control','placeholder' => 'Search Sell-Return']); !!}
+                        </div>
+                    </div>
+                <!-- <div class="col-sm-3">
+					<div class="form-group">
+						{!! Form::label('transaction_date', __('messages.date') . ':*') !!}
+                        <div class="input-group">
+                            <span class="input-group-addon">
+                                <i class="fa fa-calendar"></i>
+                            </span>
+                @php
+                    $transaction_date = !empty($sell->return_parent->transaction_date) ? $sell->return_parent->transaction_date : 'now';
+                @endphp
+                {!! Form::text('transaction_date', @format_datetime($transaction_date), ['class' => 'form-control', 'readonly', 'required']); !!}
+                        </div>
+                    </div>
+                </div> -->
+                    <div class="col-sm-12">
+                        <table class="table bg-gray" id="sell_return_table">
+                            <thead>
+                            <tr class="bg-green">
+                                <!-- <th>#</th> -->
+                                <th>@lang('product.product_name')</th>
+                                <th>@lang('sale.unit_price')</th>
+
+                                <!-- <th>@lang('lang_v1.sell_quantity')</th> -->
+                                <th>@lang('lang_v1.return_quantity')</th>
+
+                                <th>Garbage Qty (Box)</th>
+                                <th>Garbage Qty (Piece) </th>
+                                <th>Per Piece Price</th>
+                                <th>State Tax</th>
+                                <th>City Tax</th>
+                                <!-- <th>P. Since</th> -->
+                                <th>@lang('lang_v1.return_subtotal')</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row">
+                    @php
+                        $discount_type = 0.00;
+                        $discount_amount = 0.00;
+                    @endphp
+                    @if($sell != null)
+                        @php
+                            $discount_type = !empty($sell->return_parent->discount_type) ? $sell->return_parent->discount_type : $sell->discount_type;
+                            $discount_amount = !empty($sell->return_parent->discount_amount) ? $sell->return_parent->discount_amount : $sell->discount_amount;
+                        @endphp
+                    @endif
+                    <div class="col-sm-4" style="display: none;">
+                        <div class="form-group">
+                            {!! Form::label('discount_type', __( 'purchase.discount_type' ) . ':') !!}
+                            {!! Form::select('discount_type', [ '' => __('lang_v1.none'), 'fixed' => __( 'lang_v1.fixed' ), 'percentage' => __( 'lang_v1.percentage' )], ($discount_type)? $discount_type : 'fixed', ['class' => 'form-control']); !!}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+						    {!! Form::label('discount_amount', __( 'purchase.discount_amount' ) . ':') !!}
+                            {!! Form::text('discount_amount', @num_format($discount_amount), ['class' => 'form-control input_number']); !!}
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            <label>@lang('lang_v1.box_qty')</label>
+                            <input type="text" name="box_qty" value="{{$sell->box_qty ?? 0}}" class="form-control" required/>
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="form-group">
+                            {!! Form::label('note', __( 'Note' ) . ':') !!}
+                            {!! Form::textarea('note', null , ['class' => 'form-control', 'rows' => 2]); !!}
+                        </div>
+                    </div>
+                </div>
+                @php
+                    $tax_percent = 0;
+                    if(!empty($sell->tax)){
+                        $tax_percent = $sell->tax->amount;
+                    }
+                @endphp
+                {{--            {!! Form::hidden('tax_id', $sell->tax_id); !!}--}}
+                <input type="hidden" name="tax_id" value="@if($sell != null){{$sell->tax_id}}@endif">
+
+                {!! Form::hidden('tax_amount', 0, ['id' => 'tax_amount']); !!}
+                {!! Form::hidden('tax_percent', $tax_percent, ['id' => 'tax_percent']); !!}
+                <div class="row">
+                    <div class="col-sm-12 text-right">
+                        <strong>@lang('lang_v1.total_return_discount'):</strong>
+                        &nbsp;(-) <span id="total_return_discount"></span>
+                    </div>
+                    <div class="col-sm-12 text-right return_tax_hideshow">
+                        <strong>@lang('lang_v1.total_return_tax') - @if(!empty($sell->tax))({{$sell->tax->name}}
+                            - {{$sell->tax->amount}}%)@endif : </strong>
+                        &nbsp;(+) <span id="total_return_tax"></span>
+                    </div>
+                    <div class="col-sm-12 text-right">
+                        <input type='hidden' name="net_return_amount" id="netReturnAmount" />
+                        <input type='hidden' name="net_tax" id="netTax" />
+                        <input type='hidden' name="tax_flag" id="taxFlag" />
+                        <strong>@lang('lang_v1.return_total'): </strong>&nbsp;
+                        <span id="net_return">0</span>
+                    </div>
+                </div>
+                <br>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <a href="/sell-return" class="btn btn-primary pull-right">@lang('Cancel')</a>
+                        <button type="submit" name="remove_tax" style="margin-right: 5px;" value="remove_tax" class="btn btn-primary pull-right">@lang('Tax')</button>
+                        <button type="submit" name="save_close" style="margin-right: 5px;" value="save_close" class="btn btn-primary pull-right">@lang('Save & Close')</button>
+                        <button type="submit" name="save_new" style="margin-right: 5px;" value="save_new" class="btn btn-primary pull-right">@lang('Save & New')</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {!! Form::close() !!}
+    </section>
+@stop
+@section('javascript')
+    <script src="{{ asset('js/printer.js?v=' . $asset_v) }}"></script>
+    <script src="{{ asset('js/sell_return.js?v1=' . $asset_v) }}"></script>
+    <script type="text/javascript">
+
+    $(document).ready(function() {
+			$(window).keydown(function(event){
+			    if(event.keyCode == 13) {
+			      event.preventDefault();
+			      return false;
+			    }
+			});
+		});
+
+        $(document).ready(function () {
+
+            setTimeout(() => {
+                $('#getCustomer').trigger('change');
+            }, 5000);
+
+            $('form#sell_return_form').validate();
+            update_sell_return_total();
+            $(".return_tax_hideshow").hide();
+            //Date picker
+            // $('#transaction_date').datepicker({
+            //     autoclose: true,
+            //     format: datepicker_date_format
+            // });
+        });
+        $(document).on('change', 'input.return_qty, input.unit_price, input.gar_box_return_qty, input.gar_piece_return_qty, input.gar_piece_return_price, #discount_amount, #discount_type', function () {
+            if($("#taxFlag").val()==0)
+            {
+                $(".return_tax_hideshow").hide();
+            }
+            update_sell_return_total()
+        });
+
+        var qtyArray = [];
+
+        function update_sell_return_total() {
+            var net_return = 0;
+            var qtyIndex=0;
+            var totalTax = 0;
+            $('table#sell_return_table tbody tr').each(function () {
+                let g_box_quantity = __read_number($(this).find('input.gar_box_return_qty'));
+                let g_piece_quantity = __read_number($(this).find('input.gar_piece_return_qty'));
+                let quantity = __read_number($(this).find('input.return_qty')) + +g_box_quantity;
+                let unit_price = __read_number($(this).find('input.unit_price'));
+                let gar_piece_return_price = __read_number($(this).find('input.gar_piece_return_price'));
+
+                let sub_pices_total = g_piece_quantity * gar_piece_return_price;
+                let subtotal = quantity * unit_price;
+
+                // let stateTax = 0;
+                // let cityTax = 0;
+                // let wholeStateTax = (__read_number($(this).find('input.state_tax'));
+                // let wholeCityTax = (__read_number($(this).find('input.city_tax'));
+                // if((__read_number($(this).find('input.state_tax'))!== null) && (__read_number($(this).find('input.state_tax'))!== 0) && (qtyArray[qtyIndex]!==0)){
+                //     stateTax = __read_number($(this).find('input.state_tax'))/ qtyArray[qtyIndex];
+                // }
+                // if((__read_number($(this).find('input.city_tax'))!== null) && (__read_number($(this).find('input.city_tax'))!== 0) && !(qtyArray[qtyIndex]!==0)){
+                //     cityTax = __read_number($(this).find('input.city_tax'))/ qtyArray[qtyIndex];
+                // }
+
+                $(this).find('input.state_tax').val(__read_number($(this).find('input.state_actual_tax'))*quantity);
+
+                $(this).find('input.city_tax').val(__read_number($(this).find('input.city_actual_tax'))*quantity);
+
+                totalTax = totalTax + (__read_number($(this).find('input.state_actual_tax'))*quantity) + (__read_number($(this).find('input.city_actual_tax'))*quantity);
+
+
+                subtotal = subtotal + sub_pices_total;
+                $(this).find('.return_subtotal').text(__currency_trans_from_en(subtotal, true));
+                net_return += subtotal;
+                qtyIndex++;
+            });
+
+            let discount = 0;
+            if ($('#discount_type').val() == 'fixed') {
+                discount = __read_number($("#discount_amount"));
+            } else if ($('#discount_type').val() == 'percentage') {
+                let discount_percent = __read_number($("#discount_amount"));
+                discount = __calculate_amount('percentage', discount_percent, net_return);
+            }
+            discounted_net_return = net_return - discount;
+
+            let tax_percent = $('input#tax_percent').val();
+            let total_tax = __calculate_amount('percentage', tax_percent, discounted_net_return);
+            // let net_return_inc_tax = total_tax + discounted_net_return;
+            let net_return_inc_tax = totalTax + discounted_net_return;
+
+            // $('input#tax_amount').val(total_tax);
+            $('input#tax_amount').val(totalTax);
+            // $('input#tax_state_amount').val(wholeStateTax);
+            // $('input#tax_city_amount').val(wholeCityTax);
+            $('span#total_return_discount').text(__currency_trans_from_en(discount, true));
+            $('span#total_return_tax').text(__currency_trans_from_en(totalTax, true));
+            $('#netReturnAmount').val(net_return_inc_tax);
+            $('#netTax').val(totalTax);
+
+            if($("#taxFlag").val()==0)
+            {
+                $('span#net_return').text(__currency_trans_from_en(net_return_inc_tax-totalTax, true));
+            }
+
+            if($("#taxFlag").val()==1)
+            {
+                $('span#net_return').text(__currency_trans_from_en(net_return_inc_tax, true));
+            }
+        }
+
+        $(document).ready(function () {
+            $('#getCustomer').on('change',function () {
+               let customer_id = $(this).val();
+                $.ajax({
+                    type: "GET",
+                    url: "/sell-return/customer/invoice",
+                    data: {
+                        customer_id: customer_id,
+                    },
+                    success: function (data) {
+                        // console.dir(data);
+                        var sellData = data.sell_lines;
+
+                        $.each(sellData, function( index, value ) {
+                            qtyArray.push(value.quantity);
+                        });
+
+                        $('#invoice_no').val(data.invoice_no);
+                        $('#invoice_no').val(data.invoice_no);
+                        $('.invoice_no').text(data.invoice_no);
+                        $('.invoice_date').text(data.updated_at);
+                        $('.sales_rep').text(data.sales_person.first_name+' '+data.sales_person.last_name);
+                        $('.customer_name').text(data.contact.first_name+' '+data.contact.last_name);
+                    }
+                });
+            });
+
+            $('table#sell_return_table tbody').on('click', 'i.pos_remove_row', function() {
+                $(this)
+                    .parents('tr')
+                    .remove();
+                update_sell_return_total();
+            });
+
+            $('#search_key').autocomplete({
+                source: function (request, response) {
+                    let _searchKey = request.term;
+                    $("#setSearchKey").val(_searchKey);
+                   let custId = $("#getCustomer").val();
+                   if(custId != ''){
+                        $.ajax({
+                            type: "GET",
+                            url: "{{action('SellReturnController@getItemForReturn')}}",
+                            data: {
+                                searchKey: _searchKey,
+                                customer_id: custId,
+                            },
+                            success: function (data) {
+                                $('#sell_return_table tbody').html(data);
+                            }
+                        });
+
+                    }else{
+                        alert("Please select customer!");
+                    }
+                },
+                minLength: 3,
+                select: function (event, ui) {
+                    location.reload();
+                }
+            });
+        });
+
+    </script>
+@endsection
