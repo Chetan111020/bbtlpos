@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Estimate EST1095</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f7f7f7;
+      color: #333;
+    }
+    .estimate-box {
+      max-width: 800px;
+      margin: auto;
+      padding: 20px;
+      background: #fff;
+      border: 1px solid #ddd;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      text-transform: uppercase;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      font-size: 16px;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .info {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .info div {
+      width: 48%;
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      vertical-align: top;
+      font-size: 14px;
+    }
+    table th {
+      background: #f0f0f0;
+      text-align: left;
+    }
+    .total {
+      text-align: right;
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .note {
+      margin-top: 30px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="estimate-box">
+    <div class="header">
+      <h1>{{ config('business-info.name') }} - Estimate</h1>
+      <p><strong>Estimate No:</strong> EST1095 | <strong>Date:</strong> 05/08/2025</p>
+    </div>
+
+    <div class="section info">
+      <div>
+        <h2>From</h2>
+        <p>
+          @if (!empty($receipt_details->display_name))
+            <strong>{{ $receipt_details->display_name }}</strong><br>
+          @endif
+          @if (!empty($receipt_details->address))
+            <strong>{!! $receipt_details->address !!}</strong><br>
+          @endif
+          @if (!empty($receipt_details->contact))
+            <strong>{{ $receipt_details->contact }}</strong><br>
+          @endif
+          @if (!empty($receipt_details->website))
+            <strong><a href="{{ $receipt_details->website }}">{{ $receipt_details->website }}</a></strong>
+          @endif
+        </p>
+      </div>
+      <div>
+        <h2>To</h2>
+        <p>
+          @if (!empty($receipt_details->customer_name))
+            <strong>{{ $receipt_details->customer_name }} ({{ $receipt_details->contact_id }})</strong>
+          @endif
+        </p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Items</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Rate</th>
+            <th>Quantity</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if(!empty($receipt_details->lines))
+            @foreach($receipt_details->lines as $line)
+              <tr>
+                <td>{{ $line->description ?? 'N/A' }}</td>
+                <td>₹{{ number_format($line->rate ?? 0, 2) }}</td>
+                <td>{{ $line->quantity ?? 0 }}</td>
+                <td>₹{{ number_format(($line->rate ?? 0) * ($line->quantity ?? 0), 2) }}</td>
+              </tr>
+            @endforeach
+          @else
+            <tr>
+              <td colspan="4" style="text-align: center;">No items found</td>
+            </tr>
+          @endif
+        </tbody>
+      </table>
+      <div class="total">
+        TOTAL: ₹{{ number_format($receipt_details->total_amount ?? 985.00, 2) }}
+      </div>
+    </div>
+
+    <div class="note">
+      <p><strong>Transportation:</strong> As per actual.</p>
+      <p>
+        Thank you, we have great pleasure in submitting the quotation for your consideration.  
+        We hope to fulfill all your requirements in terms of quality and look forward to receiving your order and doing more business with you.
+      </p>
+      <p><strong>— Balaji Nursery</strong></p>
+    </div>
+  </div>
+</body>
+</html>
